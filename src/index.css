@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+@theme {
+  /* -------------------------------------------------------------
+   * 60-30-10 Institutional Color System (LIGHT MODE ONLY):
+   *
+   * - 60% Raw Linen (#F4F1EA): Dominant canvas, #FFFFFF cards, #FAF8F5 inset panels, #E3DDD1 borders, #1C2420 ink, #5C6660 muted
+   * - 30% Bottle Green (#0F3D2E): Sidebar anchor, primary CTA buttons (#0A2E22 hover), soft #E6EFEA tints
+   * - 10% Crimson (#9E1B32): Restrained accent, active indicators, urgent tags, destructive actions (#7F1528 hover, #FBECEF tint)
+   * ------------------------------------------------------------- */
+
+  /* Semantic Palette Tokens */
+  --color-linen: #F4F1EA;
+  --color-linen-subtle: #FAF8F5;
+  --color-linen-border: #E3DDD1;
+  --color-ink: #1C2420;
+  --color-ink-muted: #5C6660;
+
+  --color-bottle: #0F3D2E;
+  --color-bottle-hover: #0A2E22;
+  --color-bottle-active: #18523F;
+  --color-bottle-tint: #E6EFEA;
+  --color-bottle-muted: #B8CEC5;
+
+  --color-crimson-accent: #9E1B32;
+  --color-crimson-hover: #7F1528;
+  --color-crimson-tint: #FBECEF;
+
+  /* Mapped Cyprus Scale -> Bottle Green & Charcoal-Green */
+  --color-cyprus-950: #0A2E22;
+  --color-cyprus-900: #0F3D2E;
+  --color-cyprus-800: #18523F;
+  --color-cyprus-700: #1F664F;
+  --color-cyprus-600: #297B60;
+  --color-cyprus-500: #3A9274;
+  --color-cyprus-400: #5BAE92;
+  --color-cyprus-300: #8AC8B3;
+  --color-cyprus-200: #B8CEC5;
+  --color-cyprus-100: #E6EFEA;
+  --color-cyprus-50:  #F2F7F4;
+
+  /* Mapped Sand Scale -> Raw Linen Neutrals */
+  --color-sand-950: #1C2420;
+  --color-sand-900: #2A342F;
+  --color-sand-800: #404B45;
+  --color-sand-700: #5C6660;
+  --color-sand-600: #757F79;
+  --color-sand-500: #939C96;
+  --color-sand-400: #B8B3A8;
+  --color-sand-300: #E3DDD1;
+  --color-sand-200: #ECE7DC;
+  --color-sand-100: #F4F1EA;
+  --color-sand-50:  #FAF8F5;
+
+  /* 10% Heritage Crimson Scale */
+  --color-crimson-950: #4A0A15;
+  --color-crimson-900: #66101F;
+  --color-crimson-800: #7F1528;
+  --color-crimson-700: #8E182D;
+  --color-crimson-600: #9E1B32;
+  --color-crimson-500: #B6243E;
+  --color-crimson-400: #CF4B62;
+  --color-crimson-300: #E38192;
+  --color-crimson-200: #F3B8C2;
+  --color-crimson-100: #FBECEF;
+  --color-crimson-50:  #FDF5F6;
+
+  /* DepEd Blue Aliases (Mapped to Bottle Green) */
+  --color-deped-blue-950: var(--color-cyprus-950);
+  --color-deped-blue-900: var(--color-cyprus-900);
+  --color-deped-blue-800: var(--color-cyprus-800);
+  --color-deped-blue-700: var(--color-cyprus-700);
+  --color-deped-blue-600: var(--color-cyprus-600);
+  --color-deped-blue-500: var(--color-cyprus-500);
+  --color-deped-blue-400: var(--color-cyprus-400);
+  --color-deped-blue-300: var(--color-cyprus-300);
+  --color-deped-blue-200: var(--color-cyprus-200);
+  --color-deped-blue-100: var(--color-cyprus-100);
+  --color-deped-blue-50:  var(--color-cyprus-50);
+
+  /* Institutional Emerald Green (Approval / Success) */
+  --color-deped-emerald-700: #0A2E22;
+  --color-deped-emerald-600: #0F3D2E;
+  --color-deped-emerald-500: #18523F;
+  --color-deped-emerald-100: #E6EFEA;
+  --color-deped-emerald-50:  #F2F7F4;
+
+  /* Status Colors */
+  --color-status-pending: #B45309;
+  --color-status-approved: #0F3D2E;
+  --color-status-revision: #9E1B32;
+  --color-status-late: #7F1528;
+  --color-status-info: #18523F;
+
+  /* Neutral Surface Palette */
+  --color-surface-base: #F4F1EA;
+  --color-surface-card: #FFFFFF;
+  --color-surface-border: #E3DDD1;
+  --color-text-main: #1C2420;
+  --color-text-muted: #5C6660;
+
+  /* Font Families */
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'IBM Plex Sans', var(--font-sans);
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Border Radii */
+  --radius-badge: 0.375rem;
+  --radius-card: 0.75rem;
+  --radius-button: 0.5rem;
+  --radius-modal: 1rem;
+}
+
+:root {
+  --in-oklab: ;
+  --linen-grain-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.36  0 0 0 0 0.33  0 0 0 0 0.27  0 0 0 0.055 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@supports (background: linear-gradient(in oklab, white, black)) {
+  :root {
+    --in-oklab: in oklab;
+  }
+}
+
+/* Custom Accessibility, Typography & Base Rules */
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-sans);
+  background-color: #F4F1EA;
+  color: #1C2420;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #F4F1EA;
+  color: #1C2420;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0;
+  line-height: 1.55;
+}
+
+/* Tactile Raw Linen & Fine Paper Canvas Texture (maintains >= 4.5:1 contrast for #1C2420 & #5C6660) */
+.bg-linen-textured {
+  background-color: #F4F1EA;
+  background-image:
+    var(--linen-grain-svg),
+    repeating-linear-gradient(
+      0deg,
+      rgba(28, 36, 32, 0.018) 0 1px,
+      transparent 1px 5px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.32) 0 1px,
+      rgba(28, 36, 32, 0.015) 1px 2px,
+      transparent 2px 5px
+    ),
+    linear-gradient(160deg var(--in-oklab), #F6F3EC 0%, #F4F1EA 52%, #EFEAE0 100%);
+  background-repeat: repeat, repeat, repeat, no-repeat;
+  background-size: 180px 180px, 5px 5px, 5px 5px, cover;
+  background-attachment: fixed;
+}
+
+/* Enhanced Heading Readability */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Print Layout Normalization (8.5in x 13in Folio, 0.5in margins) */
+@media print {
+  @page {
+    size: 8.5in 13in;
+    margin: 0.5in;
+  }
+
+  html,
+  body,
+  .bg-linen-textured {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #root,
+  main {
+    background: #FFFFFF !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Focus Indicator Standard (WCAG 2.2 AA) with Heritage Crimson */
+:focus-visible {
+  outline: 2px solid #9E1B32;
+  outline-offset: 2px;
+}
+
+/* Touch Target Minimum (44x44px for touch devices) */
+@media (pointer: coarse) {
+  button, a, input, select, textarea, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Hide scrollbars while preserving scrollability */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
