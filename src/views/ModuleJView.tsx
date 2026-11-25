@@ -197,16 +197,16 @@ export const ModuleJView: React.FC = () => {
       )}
 
       {/* 4. Tab Navigation Bar */}
-      <div className="bg-white rounded-2xl border border-sand-300 p-4 shadow-sm space-y-4 transition-colors">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-sand-200 pb-3">
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-sand-100 border border-sand-200 text-xs">
+      <div className="bg-white rounded-2xl border border-[#E3DDD1] p-4 shadow-2xs space-y-4 transition-colors">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#E3DDD1] pb-3">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#FAF8F5] border border-[#E3DDD1] text-xs max-w-full overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setActiveTab("calendar")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                activeTab ==="calendar"
-                  ?"bg-white text-cyprus-900 shadow-xs border border-sand-200"
-                  :"text-sand-700 hover:text-cyprus-900"
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === "calendar"
+                  ? "bg-[#E6EFEA] text-[#0F3D2E]"
+                  : "text-[#5C6660] hover:text-[#1C2420]"
               }`}
             >
               School Calendar ({events.length})
@@ -215,10 +215,10 @@ export const ModuleJView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab("daily_sessions")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                activeTab ==="daily_sessions"
-                  ?"bg-white text-cyprus-900 shadow-xs border border-sand-200"
-                  :"text-sand-700 hover:text-cyprus-900"
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === "daily_sessions"
+                  ? "bg-[#E6EFEA] text-[#0F3D2E]"
+                  : "text-[#5C6660] hover:text-[#1C2420]"
               }`}
             >
               Daily Roll-Calls ({sessions.length})
@@ -227,10 +227,10 @@ export const ModuleJView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab("sf2_monthly")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                activeTab ==="sf2_monthly"
-                  ?"bg-white text-cyprus-900 shadow-xs border border-sand-200"
-                  :"text-sand-700 hover:text-cyprus-900"
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === "sf2_monthly"
+                  ? "bg-[#E6EFEA] text-[#0F3D2E]"
+                  : "text-[#5C6660] hover:text-[#1C2420]"
               }`}
             >
               SF2 Monthly Report
@@ -354,7 +354,7 @@ export const ModuleJView: React.FC = () => {
                         <td className="py-2.5 px-3 font-bold text-crimson-700">
                           {sess.total_absent}
                         </td>
-                        <td className="py-2.5 px-3 font-semibold text-amber-700">
+                        <td className="py-2.5 px-3 font-semibold text-[#9E1B32]">
                           {sess.total_tardy}
                         </td>
                         <td className="py-2.5 px-3 text-sand-600">

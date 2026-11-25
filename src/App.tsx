@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppShell } from "./components/layout/AppShell";
 import { AppSkeletonLoader } from "./components/common/AppSkeletonLoader";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { LandingPage } from "./pages/LandingPage";
+import { LoginView } from "./views/LoginView";
 import type { ModuleId } from "./types";
 
 // Route-level code-splitting for all 10 modules (ADR-09 Core Web Vitals)
@@ -38,7 +40,9 @@ const ModuleJView = lazy(() =>
 );
 
 const AppContent: React.FC = () => {
-  const { profile } = useAuth();
+  const { user, profile, isLoading, logout } = useAuth();
+  // Always open on the public Landing / Home Page first (even if a session is cached)
+  const [pageView, setPageView] = useState<"landing" | "login" | "portal">("landing");
   const [activeModule, setActiveModule] = useState<ModuleId>("M1");
   const lastRoutedProfileId = useRef<string | null>(null);
 
@@ -56,6 +60,16 @@ const AppContent: React.FC = () => {
     else setActiveModule("M1");
   }, [profile]);
 
+  // Automatically enter the Faculty Portal upon signing in from LoginView,
+  // and return cleanly to LandingPage upon signing out from the Portal.
+  useEffect(() => {
+    if (pageView === "login" && user) {
+      setPageView("portal");
+    } else if (pageView === "portal" && !isLoading && !user) {
+      setPageView("landing");
+    }
+  }, [pageView, user, isLoading]);
+
   const moduleNamesMap: Record<string, string> = {
     M2: "Lesson Log (DLL/DLP) Hub",
     M3: "Faculty Loading & Schedule (SF7)",
@@ -64,13 +78,33 @@ const AppContent: React.FC = () => {
     M8: "RPMS Portfolio & COT Observations",
   };
 
+  if (pageView === "landing") {
+    return (
+      <LandingPage
+        isAuthenticated={Boolean(user)}
+        userName={profile?.full_name || user?.email || null}
+        onEnterPortal={() => setPageView("portal")}
+        onSignIn={() => setPageView(user ? "portal" : "login")}
+        onSignOut={logout}
+      />
+    );
+  }
+
+  if (pageView === "login" && !user) {
+    return <LoginView onBackToHome={() => setPageView("landing")} />;
+  }
+
   return (
     <ProtectedRoute
       activeModule={activeModule}
       onSelectModule={setActiveModule}
       moduleTitle={moduleNamesMap[activeModule] || "Instructional Module"}
     >
-      <AppShell activeModule={activeModule} onSelectModule={setActiveModule}>
+      <AppShell
+        activeModule={activeModule}
+        onSelectModule={setActiveModule}
+        onGoHome={() => setPageView("landing")}
+      >
         <Suspense fallback={<AppSkeletonLoader />}>
           {activeModule === "M1" && <ModuleAView />}
           {activeModule === "M2" && <ModuleCView />}

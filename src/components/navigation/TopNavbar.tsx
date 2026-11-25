@@ -1,16 +1,18 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
-import { School, LogOut, Menu } from "lucide-react";
+import { Home, LogOut, Menu } from "lucide-react";
 
 interface TopNavbarProps {
   onOpenMobileDrawer: () => void;
   onNavigateToProfile?: () => void;
+  onGoHome?: () => void;
   activeTermLabel?: string;
 }
 
 export const TopNavbar: React.FC<TopNavbarProps> = ({
   onOpenMobileDrawer,
   onNavigateToProfile,
+  onGoHome,
   activeTermLabel = "SY 2026-2027 • Term 2",
 }) => {
   const { profile, logout } = useAuth();
@@ -28,9 +30,20 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#18523F] border border-[#B8CEC5]/20 flex items-center justify-center text-[#F4F1EA]">
-            <School className="w-4 h-4" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={onGoHome}
+          disabled={!onGoHome}
+          title="Return to Public Home"
+          aria-label="Return to e-FTNHS Home Page"
+          className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 hover:bg-[#18523F] transition-colors cursor-pointer text-left disabled:cursor-default disabled:hover:bg-transparent"
+        >
+          <div className="w-8 h-8 rounded-full bg-[#F4F1EA] p-0.5 flex items-center justify-center shrink-0">
+            <img
+              src="/images/Official Logos/Fermin_logo.png"
+              alt="Fermin Tayabas National High School Seal"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="font-bold text-base tracking-tight font-display text-[#F4F1EA]">
@@ -40,7 +53,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
               Fermin Tayabas National High School
             </span>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Center: Active Term Pill */}
@@ -49,8 +62,21 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
         <span className="whitespace-nowrap">{activeTermLabel}</span>
       </div>
 
-      {/* Right Actions: User Profile & Sign Out */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      {/* Right Actions: Public Home, User Profile & Sign Out */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
+        {onGoHome && (
+          <button
+            type="button"
+            onClick={onGoHome}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#B8CEC5] hover:bg-[#18523F] hover:text-[#F4F1EA] transition-colors cursor-pointer whitespace-nowrap"
+            title="Public Home Page"
+            aria-label="Go to Public Home Page"
+          >
+            <Home className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span className="hidden md:inline">Home</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onNavigateToProfile}

@@ -66,13 +66,13 @@ export const MemoCard: React.FC<MemoCardProps> = ({
           </div>
 
           {memo.is_acknowledged ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
-              <CheckCircle className="w-3 h-3 text-teal-600" />
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0F3D2E] bg-[#E6EFEA] px-2 py-0.5 rounded-full border border-[#B8CEC5]">
+              <CheckCircle className="w-3 h-3 text-[#0F3D2E]" />
               <span>Acknowledged</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-              <Clock className="w-3 h-3 text-amber-600" />
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9E1B32] bg-[#FBECEF] px-2 py-0.5 rounded-full border border-[#F3B8C2]">
+              <Clock className="w-3 h-3 text-[#9E1B32]" />
               <span>Pending Read</span>
             </span>
           )}

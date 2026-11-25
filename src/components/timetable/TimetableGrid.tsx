@@ -228,9 +228,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
         </div>
 
         {/* Dynamic Selector Dropdown & Print Button */}
-        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2.5">
+        <div className="flex items-center justify-between lg:justify-end gap-2.5 overflow-x-auto no-scrollbar">
           {viewMode === "section" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <label htmlFor="grid-section-select" className="text-xs font-semibold text-[#5C6660] whitespace-nowrap">
                 Section:
               </label>
@@ -238,7 +238,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                 id="grid-section-select"
                 value={selectedSectionId}
                 onChange={(e) => setSelectedSectionId(e.target.value)}
-                className="py-1.5 px-3 rounded-lg border border-[#E3DDD1] bg-[#FAF8F5] text-xs font-medium text-[#1C2420] cursor-pointer"
+                className="py-1.5 px-3 rounded-lg border border-[#E3DDD1] bg-[#FAF8F5] text-xs font-medium text-[#1C2420] cursor-pointer max-w-[230px]"
               >
                 {sections.map((sec) => (
                   <option key={sec.id} value={sec.id}>
@@ -250,7 +250,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
           )}
 
           {viewMode === "teacher" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <label htmlFor="grid-teacher-select" className="text-xs font-semibold text-[#5C6660] whitespace-nowrap">
                 Teacher:
               </label>
@@ -258,7 +258,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                 id="grid-teacher-select"
                 value={selectedTeacherId}
                 onChange={(e) => setSelectedTeacherId(e.target.value)}
-                className="py-1.5 px-3 rounded-lg border border-[#E3DDD1] bg-[#FAF8F5] text-xs font-medium text-[#1C2420] cursor-pointer"
+                className="py-1.5 px-3 rounded-lg border border-[#E3DDD1] bg-[#FAF8F5] text-xs font-medium text-[#1C2420] cursor-pointer max-w-[230px]"
               >
                 {teachers.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -272,7 +272,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
           <button
             type="button"
             onClick={handlePrintSchedule}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#0F3D2E] bg-[#E6EFEA] hover:bg-[#0F3D2E] text-[#0F3D2E] hover:text-[#FFFFFF] text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#0F3D2E] bg-[#E6EFEA] hover:bg-[#0F3D2E] text-[#0F3D2E] hover:text-[#FFFFFF] text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer shrink-0"
           >
             <Printer className="w-3.5 h-3.5 shrink-0" />
             <span>Print Schedule</span>
@@ -311,7 +311,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
           <table className="w-full table-fixed border-collapse text-left text-xs min-w-[680px] lg:min-w-0 print:min-w-0">
             <thead>
               <tr className="bg-[#FAF8F5] border-b border-[#E3DDD1] text-[#404B45] uppercase text-[11px] font-semibold tracking-wider print:bg-slate-100 print:border-slate-400">
-                <th className="py-2.5 px-3 w-36 border-r border-[#E3DDD1] print:border-slate-400">
+                <th className="py-2.5 px-3 w-28 xl:w-32 border-r border-[#E3DDD1] print:border-slate-400">
                   Time
                 </th>
                 {DAYS.map((day) => (
@@ -450,7 +450,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                       </div>
                                     )}
                                     {showEntryTimeBadge && entryResolved && (
-                                      <div className="text-[10px] font-mono font-semibold text-amber-800">
+                                      <div className="text-[10px] font-mono font-semibold text-[#9E1B32]">
                                         {entryResolved.start_time.slice(0, 5)}–{entryResolved.end_time.slice(0, 5)}
                                       </div>
                                     )}

@@ -214,7 +214,7 @@ export const ModuleBView: React.FC = () => {
         />
 
         {/* Sub-Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-1 p-1 bg-[#FFFFFF] border border-[#E3DDD1] rounded-xl w-fit">
+        <div className="flex items-center gap-1 p-1 bg-[#FFFFFF] border border-[#E3DDD1] rounded-xl w-fit max-w-full overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab("grid")}

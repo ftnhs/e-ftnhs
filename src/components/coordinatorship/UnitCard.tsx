@@ -30,24 +30,27 @@ export const UnitCard: React.FC<UnitCardProps> = ({
 }) => {
   const getUnitIcon = (code: string) => {
     switch (code) {
-      case"DRRM":
-        return <ShieldAlert className="w-6 h-6 text-crimson-600" />;
-      case"BRIGADA":
-        return <Users className="w-6 h-6 text-teal-600" />;
-      case"GUIDANCE":
-        return <HeartHandshake className="w-6 h-6 text-amber-600" />;
-      case"SCOUTING":
-        return <Compass className="w-6 h-6 text-emerald-600" />;
-      case"JOURNALISM":
-        return <Newspaper className="w-6 h-6 text-cyprus-800" />;
-      case"ICT":
-        return <Laptop className="w-6 h-6 text-sky-600" />;
-      case"YES-O":
-        return <Leaf className="w-6 h-6 text-green-600" />;
-      case"SPORTS":
-        return <Trophy className="w-6 h-6 text-amber-600" />;
+      case "DRRM":
+        return <ShieldAlert className="w-6 h-6 text-[#9E1B32]" />;
+      case "GUIDANCE":
+      case "SPORTS":
+        return code === "GUIDANCE" ? (
+          <HeartHandshake className="w-6 h-6 text-[#0F3D2E]" />
+        ) : (
+          <Trophy className="w-6 h-6 text-[#0F3D2E]" />
+        );
+      case "BRIGADA":
+        return <Users className="w-6 h-6 text-[#0F3D2E]" />;
+      case "SCOUTING":
+        return <Compass className="w-6 h-6 text-[#0F3D2E]" />;
+      case "JOURNALISM":
+        return <Newspaper className="w-6 h-6 text-[#0F3D2E]" />;
+      case "ICT":
+        return <Laptop className="w-6 h-6 text-[#0F3D2E]" />;
+      case "YES-O":
+        return <Leaf className="w-6 h-6 text-[#0F3D2E]" />;
       default:
-        return <Briefcase className="w-6 h-6 text-cyprus-800" />;
+        return <Briefcase className="w-6 h-6 text-[#0F3D2E]" />;
     }
   };
 

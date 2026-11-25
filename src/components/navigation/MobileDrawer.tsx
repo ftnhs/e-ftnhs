@@ -4,13 +4,14 @@ import { getNavGroupsForRole } from "./navigationData";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "motion/react";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
-import { School, X, LogOut } from "lucide-react";
+import { X, LogOut, Home } from "lucide-react";
 
 interface MobileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   activeModule: ModuleId;
   onSelectModule: (id: ModuleId) => void;
+  onGoHome?: () => void;
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({
@@ -18,6 +19,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onClose,
   activeModule,
   onSelectModule,
+  onGoHome,
 }) => {
   const { profile, logout } = useAuth();
   const shouldReduceMotion = useReducedMotion();
@@ -58,8 +60,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             {/* Header */}
             <div className="p-4 border-b border-[#18523F] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#18523F] text-[#F4F1EA] flex items-center justify-center">
-                  <School className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-full bg-[#F4F1EA] p-0.5 flex items-center justify-center shrink-0">
+                  <img
+                    src="/images/Official Logos/Fermin_logo.png"
+                    alt="Fermin Tayabas National High School Seal"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <span className="font-bold text-sm text-[#F4F1EA] font-display">
                   e-FTNHS
@@ -111,7 +117,20 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </nav>
 
             {/* Drawer Footer */}
-            <div className="p-4 border-t border-[#18523F]">
+            <div className="p-4 border-t border-[#18523F] space-y-2">
+              {onGoHome && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onGoHome();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold text-[#F4F1EA] bg-[#18523F] hover:bg-[#1F664F] border border-[#246A52] transition-colors cursor-pointer"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Public Home</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={logout}

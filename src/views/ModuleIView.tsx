@@ -182,15 +182,15 @@ export const ModuleIView: React.FC = () => {
 
       {/* 3. Action Alert for Relievers (If any pending requests for current user) */}
       {pendingReliefsForMe.length > 0 && (
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div className="p-4 rounded-xl bg-[#FBECEF] border border-[#F3B8C2] text-[#9E1B32] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <AlertCircle className="w-5 h-5 text-[#9E1B32] shrink-0" />
             <div>
               <div className="text-xs font-bold">
-                You have {pendingReliefsForMe.length} Pending Class Relief{""}
-                {pendingReliefsForMe.length === 1 ?"Request" :"Requests"}
+                You have {pendingReliefsForMe.length} Pending Class Relief{" "}
+                {pendingReliefsForMe.length === 1 ? "Request" : "Requests"}
               </div>
-              <p className="text-[11px] text-amber-700">
+              <p className="text-[11px] text-[#7F1528]">
                 Colleagues have designated you to cover classes during their official leave. Please review and confirm your conforme.
               </p>
             </div>
@@ -198,25 +198,25 @@ export const ModuleIView: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab("conforme_requests")}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shrink-0 cursor-pointer"
+            className="px-3.5 py-2 rounded-lg bg-[#9E1B32] hover:bg-[#7F1528] text-white text-xs font-semibold transition-colors shrink-0 cursor-pointer whitespace-nowrap"
           >
-            Review My Relief Requests
+            Review Relief Requests
           </button>
         </div>
       )}
 
       {/* 4. Controls: Tabs, Search & Status Filter */}
-      <div className="bg-white rounded-2xl border border-sand-300 p-4 shadow-sm space-y-4 transition-colors">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-sand-200 pb-3">
+      <div className="bg-white rounded-2xl border border-[#E3DDD1] p-4 shadow-2xs space-y-4 transition-colors">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#E3DDD1] pb-3">
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-sand-100 border border-sand-200 text-xs">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#FAF8F5] border border-[#E3DDD1] text-xs max-w-full overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                activeTab ==="all"
-                  ?"bg-white text-cyprus-900 shadow-xs border border-sand-200"
-                  :"text-sand-700 hover:text-cyprus-900"
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === "all"
+                  ? "bg-[#E6EFEA] text-[#0F3D2E]"
+                  : "text-[#5C6660] hover:text-[#1C2420]"
               }`}
             >
               All Applications ({applications.length})
@@ -224,10 +224,10 @@ export const ModuleIView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab("my_leaves")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                activeTab ==="my_leaves"
-                  ?"bg-white text-cyprus-900 shadow-xs border border-sand-200"
-                  :"text-sand-700 hover:text-cyprus-900"
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === "my_leaves"
+                  ? "bg-[#E6EFEA] text-[#0F3D2E]"
+                  : "text-[#5C6660] hover:text-[#1C2420]"
               }`}
             >
               My Applications
@@ -235,15 +235,15 @@ export const ModuleIView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab("conforme_requests")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer relative ${
-                activeTab ==="conforme_requests"
-                  ?"bg-white text-cyprus-900 shadow-xs border border-sand-200"
-                  :"text-sand-700 hover:text-cyprus-900"
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 relative ${
+                activeTab === "conforme_requests"
+                  ? "bg-[#E6EFEA] text-[#0F3D2E]"
+                  : "text-[#5C6660] hover:text-[#1C2420]"
               }`}
             >
               Relief Requests
               {pendingReliefsForMe.length > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-crimson-600 text-white text-[10px] font-extrabold">
+                <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-[#9E1B32] text-white text-[10px] font-bold">
                   {pendingReliefsForMe.length}
                 </span>
               )}
@@ -363,12 +363,12 @@ export const ModuleIView: React.FC = () => {
                               {declinedReliefs} Declined
                             </span>
                           ) : acceptedReliefs === totalReliefs ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6EFEA] text-[#0F3D2E] text-[11px] font-semibold border border-[#B8CEC5]">
                               <CheckCircle className="w-3 h-3" />
                               {acceptedReliefs}/{totalReliefs} Accepted
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#5C6660] text-[11px] font-semibold border border-[#E3DDD1]">
                               <Clock className="w-3 h-3" />
                               {acceptedReliefs}/{totalReliefs} Conforme
                             </span>
@@ -377,26 +377,26 @@ export const ModuleIView: React.FC = () => {
 
                         <td className="py-3 px-4 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                              app.status ==="Approved"
-                                ?"bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                : app.status ==="Disapproved"
-                                ?"bg-crimson-100 text-crimson-800 border border-crimson-300"
-                                : app.status ==="Pending_Approval"
-                                ?"bg-sky-100 text-sky-800 border border-sky-300"
-                                :"bg-amber-100 text-amber-800 border border-amber-300"
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                              app.status === "Approved"
+                                ? "bg-[#E6EFEA] text-[#0F3D2E] border border-[#B8CEC5]"
+                                : app.status === "Disapproved"
+                                ? "bg-[#FBECEF] text-[#9E1B32] border border-[#F3B8C2]"
+                                : app.status === "Pending_Approval"
+                                ? "bg-[#E6EFEA]/70 text-[#0F3D2E] border border-[#B8CEC5]"
+                                : "bg-[#FAF8F5] text-[#5C6660] border border-[#E3DDD1]"
                             }`}
                           >
-                            {app.status ==="Approved" && <CheckCircle className="w-3 h-3" />}
-                            {app.status ==="Disapproved" && <XCircle className="w-3 h-3" />}
-                            {app.status ==="Pending_Approval" && <Clock className="w-3 h-3" />}
-                            {app.status ==="Pending_Relief" && <UserCheck className="w-3 h-3" />}
-                            {app.status.replace("_","")}
+                            {app.status === "Approved" && <CheckCircle className="w-3 h-3" />}
+                            {app.status === "Disapproved" && <XCircle className="w-3 h-3" />}
+                            {app.status === "Pending_Approval" && <Clock className="w-3 h-3" />}
+                            {app.status === "Pending_Relief" && <UserCheck className="w-3 h-3" />}
+                            {app.status.replace("_", " ")}
                           </span>
                         </td>
 
                         <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-2">
                             {myPendingRelief && (
                               <button
                                 type="button"
@@ -406,7 +406,7 @@ export const ModuleIView: React.FC = () => {
                                     app,
                                   })
                                 }
-                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-[#0F3D2E] hover:bg-[#0A2E22] text-white text-xs font-semibold transition-colors cursor-pointer"
                               >
                                 Sign Conforme
                               </button>

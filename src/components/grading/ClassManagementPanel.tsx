@@ -859,7 +859,7 @@ export const ClassManagementPanel: React.FC<ClassManagementPanelProps> = ({
                             </td>
                             {canManageSelectedClass && (
                               <td className="py-2 px-3 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center justify-end gap-2">
                                   <button
                                     type="button"
                                     onClick={() => setEditingLearner(l)}

@@ -221,7 +221,7 @@ export const ModuleHView: React.FC = () => {
                     <span className="font-bold text-xs text-cyprus-900">
                       {obs.observation_period}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E6EFEA] text-[#0F3D2E] border border-[#B8CEC5]">
                       Rating: {Number(obs.average_rating).toFixed(2)}
                     </span>
                   </div>
@@ -310,11 +310,11 @@ export const ModuleHView: React.FC = () => {
                   )}
 
                   {selectedObservation.areas_for_improvement && (
-                    <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-1">
-                      <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                    <div className="p-4 rounded-2xl bg-[#FBECEF]/60 border border-[#F3B8C2] space-y-1">
+                      <h4 className="text-xs font-bold text-[#9E1B32] uppercase tracking-wide">
                         Instructional Growth Recommendations
                       </h4>
-                      <p className="text-xs text-amber-800 leading-relaxed">
+                      <p className="text-xs text-[#1C2420] leading-relaxed">
                         {selectedObservation.areas_for_improvement}
                       </p>
                     </div>

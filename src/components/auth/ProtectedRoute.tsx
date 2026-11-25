@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { LandingPage } from "../../pages/LandingPage";
 import { LoginView } from "../../views/LoginView";
 import { PendingVerificationView } from "../../views/PendingVerificationView";
 import { AppSkeletonLoader } from "../common/AppSkeletonLoader";
@@ -29,7 +30,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   moduleTitle = "Instructional Module",
   children,
 }) => {
-  const { user, profile, isLoading, isApproved } = useAuth();
+  const { user, profile, isLoading, isApproved, logout } = useAuth();
+  const [showSignIn, setShowSignIn] = useState<boolean>(false);
+
+  // Reset public auth sub-route once authenticated so subsequent sign-outs return cleanly to LandingPage
+  useEffect(() => {
+    if (user) {
+      setShowSignIn(false);
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -39,9 +48,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Gate 1: Unauthenticated -> LoginView
+  // Gate 1: Unauthenticated -> Public Landing Page or Faculty Sign-In
   if (!user) {
-    return <LoginView />;
+    if (showSignIn) {
+      return <LoginView onBackToHome={() => setShowSignIn(false)} />;
+    }
+    return (
+      <LandingPage
+        isAuthenticated={false}
+        onSignIn={() => setShowSignIn(true)}
+        onSignOut={logout}
+      />
+    );
   }
 
   // Gate 2: Unprovisioned (null profile) or unapproved/pending/rejected -> fail-closed quarantine

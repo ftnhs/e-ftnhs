@@ -72,67 +72,55 @@ export const MPSAnalyticsDashboard: React.FC<MPSAnalyticsDashboardProps> = ({
     <div className="space-y-6">
       {/* 1. Executive Statistical KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white rounded-2xl border border-sand-200 p-4 shadow-xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-sand-600">
+        <div className="bg-[#FFFFFF] rounded-xl border border-[#E3DDD1] p-4">
+          <div className="text-xs font-medium text-[#5C6660]">
             Mean Score (μ)
           </div>
-          <div className="mt-1 text-2xl font-bold text-cyprus-900 font-display">
+          <div className="mt-1.5 text-2xl font-semibold text-[#1C2420] font-mono tabular-nums">
             {Number(assessment.mean_score || 0).toFixed(2)}
-            <span className="text-xs text-sand-500 font-normal ml-1">
+            <span className="text-xs text-[#5C6660] font-normal ml-1">
               / {assessment.total_items}
             </span>
           </div>
-          <p className="text-[11px] text-sand-600 mt-1">
-            Class arithmetic average
-          </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-sand-200 p-4 shadow-xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-sand-600">
+        <div className="bg-[#FFFFFF] rounded-xl border border-[#E3DDD1] p-4">
+          <div className="text-xs font-medium text-[#5C6660]">
             Std. Deviation (SD)
           </div>
-          <div className="mt-1 text-2xl font-bold text-cyprus-900 font-display">
+          <div className="mt-1.5 text-2xl font-semibold text-[#1C2420] font-mono tabular-nums">
             {Number(assessment.standard_deviation || 0).toFixed(2)}
           </div>
-          <p className="text-[11px] text-sand-600 mt-1">
-            Score variance & spread
-          </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-sand-200 p-4 shadow-xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-crimson-600">
+        <div className="bg-[#FFFFFF] rounded-xl border border-[#E3DDD1] p-4">
+          <div className="text-xs font-medium text-[#5C6660]">
             Mean Percentage Score (MPS)
           </div>
-          <div className="mt-1 text-2xl font-bold text-crimson-600 font-display">
+          <div className="mt-1.5 text-2xl font-semibold text-[#9E1B32] font-mono tabular-nums">
             {Number(assessment.mean_percentage_score || 0).toFixed(2)}%
           </div>
-          <p className="text-[11px] text-sand-600 mt-1">
-            DepEd Benchmark: 75.00%
-          </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-sand-200 p-4 shadow-xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-sand-600">
+        <div className="bg-[#FFFFFF] rounded-xl border border-[#E3DDD1] p-4">
+          <div className="text-xs font-medium text-[#5C6660]">
             Mastery Level
           </div>
-          <div className="mt-1 text-sm font-bold text-cyprus-900 font-display line-clamp-1">
+          <div className="mt-2 text-sm font-semibold text-[#0F3D2E] line-clamp-2">
             {assessment.mastery_level}
           </div>
-          <p className="text-[11px] text-teal-600 mt-1 font-medium">
-            DepEd Order 8 s. 2015
-          </p>
         </div>
       </div>
 
       {/* 2. Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Score Distribution Histogram */}
-        <div className="bg-white rounded-2xl border border-sand-200 p-5 shadow-xs space-y-4">
+        <div className="bg-[#FFFFFF] rounded-xl border border-[#E3DDD1] p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-cyprus-900 font-display">
+            <h3 className="text-sm font-semibold text-[#1C2420] font-display">
               Score Distribution Histogram
             </h3>
-            <span className="text-xs text-sand-600">
+            <span className="text-xs text-[#5C6660] font-mono">
               {assessment.examinee_count} examinees
             </span>
           </div>
@@ -140,23 +128,23 @@ export const MPSAnalyticsDashboard: React.FC<MPSAnalyticsDashboardProps> = ({
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={scoreBuckets} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
-                <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E3DDD1" vertical={false} />
+                <XAxis dataKey="range" tick={{ fontSize: 11, fill: "#5C6660" }} stroke="#E3DDD1" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#5C6660" }} stroke="#E3DDD1" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor:"#0c2b33",
-                    color:"#faf8f5",
-                    borderRadius:"12px",
-                    border:"none",
-                    fontSize:"12px",
+                    backgroundColor: "#0F3D2E",
+                    color: "#F4F1EA",
+                    borderRadius: "10px",
+                    border: "1px solid #246A52",
+                    fontSize: "12px",
                   }}
                 />
-                <Bar dataKey="count" fill="#123c47" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="count" fill="#0F3D2E" radius={[6, 6, 0, 0]}>
                   {scoreBuckets.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.count > 0 ?"#194e5c" :"#dfd6cb"}
+                      fill={entry.count > 0 ? "#0F3D2E" : "#E3DDD1"}
                     />
                   ))}
                 </Bar>
@@ -166,12 +154,12 @@ export const MPSAnalyticsDashboard: React.FC<MPSAnalyticsDashboardProps> = ({
         </div>
 
         {/* Item Difficulty Index Curve */}
-        <div className="bg-white rounded-2xl border border-sand-200 p-5 shadow-xs space-y-4">
+        <div className="bg-[#FFFFFF] rounded-xl border border-[#E3DDD1] p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-cyprus-900 font-display">
+            <h3 className="text-sm font-semibold text-[#1C2420] font-display">
               Item Difficulty Index (Dj) Curve
             </h3>
-            <span className="text-xs text-sand-600">
+            <span className="text-xs text-[#5C6660] font-mono">
               {items.length} items
             </span>
           </div>
@@ -179,26 +167,26 @@ export const MPSAnalyticsDashboard: React.FC<MPSAnalyticsDashboardProps> = ({
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={difficultyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
-                <XAxis dataKey="item" tick={{ fontSize: 10 }} />
-                <YAxis domain={[0, 1]} ticks={[0, 0.2, 0.5, 0.8, 1]} tick={{ fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E3DDD1" vertical={false} />
+                <XAxis dataKey="item" tick={{ fontSize: 10, fill: "#5C6660" }} stroke="#E3DDD1" />
+                <YAxis domain={[0, 1]} ticks={[0, 0.2, 0.5, 0.8, 1]} tick={{ fontSize: 11, fill: "#5C6660" }} stroke="#E3DDD1" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor:"#0c2b33",
-                    color:"#faf8f5",
-                    borderRadius:"12px",
-                    border:"none",
-                    fontSize:"12px",
+                    backgroundColor: "#0F3D2E",
+                    color: "#F4F1EA",
+                    borderRadius: "10px",
+                    border: "1px solid #246A52",
+                    fontSize: "12px",
                   }}
                 />
                 {/* Reference line for Difficult (0.20) */}
-                <ReferenceLine y={0.2} stroke="#c41738" strokeDasharray="3 3" label="Difficult (0.20)" />
+                <ReferenceLine y={0.2} stroke="#9E1B32" strokeDasharray="3 3" label="Difficult (0.20)" />
                 {/* Reference line for Easy (0.80) */}
-                <ReferenceLine y={0.8} stroke="#d97706" strokeDasharray="3 3" label="Easy (0.80)" />
+                <ReferenceLine y={0.8} stroke="#5C6660" strokeDasharray="3 3" label="Easy (0.80)" />
                 <Line
                   type="monotone"
                   dataKey="difficulty"
-                  stroke="#0c2b33"
+                  stroke="#0F3D2E"
                   strokeWidth={2}
                   dot={(props: { cx?: number; cy?: number; payload?: { isLeastLearned?: boolean } }) => {
                     const isLeast = props.payload?.isLeastLearned;
@@ -208,7 +196,7 @@ export const MPSAnalyticsDashboard: React.FC<MPSAnalyticsDashboardProps> = ({
                         cx={props.cx}
                         cy={props.cy}
                         r={isLeast ? 5 : 3}
-                        fill={isLeast ?"#c41738" :"#194e5c"}
+                        fill={isLeast ? "#9E1B32" : "#0F3D2E"}
                         stroke="#ffffff"
                         strokeWidth={1.5}
                       />

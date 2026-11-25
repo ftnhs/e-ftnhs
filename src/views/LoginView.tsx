@@ -3,14 +3,18 @@ import { useAuth } from "../context/AuthContext";
 import {
   LogIn,
   AlertCircle,
-  School,
+  ArrowLeft,
   User,
   Lock,
   Eye,
   EyeOff,
 } from "lucide-react";
 
-export const LoginView: React.FC = () => {
+interface LoginViewProps {
+  onBackToHome?: () => void;
+}
+
+export const LoginView: React.FC<LoginViewProps> = ({ onBackToHome }) => {
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -51,15 +55,32 @@ export const LoginView: React.FC = () => {
   return (
     <div className="min-h-screen bg-linen-textured flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-[#0F3D2E] flex items-center justify-center shadow-sm">
-          <School className="w-7 h-7 text-[#F4F1EA]" aria-hidden="true" />
+        {onBackToHome && (
+          <div className="mb-5 flex justify-center">
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-lg bg-[#FFFFFF] border border-[#E3DDD1] hover:bg-[#FAF8F5] text-xs font-semibold text-[#0F3D2E] transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Back to Public Home</span>
+            </button>
+          </div>
+        )}
+
+        <div className="mx-auto w-14 h-14 rounded-full bg-[#FFFFFF] border border-[#E3DDD1] p-1.5 flex items-center justify-center shadow-xs">
+          <img
+            src="/images/Official Logos/Fermin_logo.png"
+            alt="Fermin Tayabas National High School Seal"
+            className="w-full h-full object-contain"
+          />
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[#1C2420] font-display">
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#1C2420] font-editorial">
           e-FTNHS Portal
         </h1>
         <p className="mt-1 text-sm text-[#5C6660] font-medium">
-          Fermin Tayabas National High School
+          Fermin Tayabas National High School • ID 302851
         </p>
       </div>
 

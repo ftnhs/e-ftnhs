@@ -58,27 +58,27 @@ export const ItemAnalysisTable: React.FC<ItemAnalysisTableProps> = ({
 
   const getInterpretationBadge = (interp: string) => {
     switch (interp) {
-      case"Difficult":
-        return"bg-crimson-100 text-crimson-800 border-crimson-300";
-      case"Average":
-        return"bg-emerald-100 text-emerald-800 border-emerald-300";
-      case"Easy":
-        return"bg-amber-100 text-amber-800 border-amber-300";
+      case "Difficult":
+        return "bg-[#FBECEF] text-[#9E1B32] border-[#F3B8C2]";
+      case "Average":
+        return "bg-[#E6EFEA] text-[#0F3D2E] border-[#B8CEC5]";
+      case "Easy":
+        return "bg-[#FAF8F5] text-[#5C6660] border-[#E3DDD1]";
       default:
-        return"bg-sand-100 text-sand-800 border-sand-300";
+        return "bg-[#FAF8F5] text-[#1C2420] border-[#E3DDD1]";
     }
   };
 
   const getActionBadge = (action: string) => {
     switch (action) {
-      case"Retain":
-        return"bg-teal-100 text-teal-800 border-teal-300";
-      case"Revise":
-        return"bg-amber-100 text-amber-800 border-amber-300";
-      case"Reject":
-        return"bg-crimson-100 text-crimson-800 border-crimson-300";
+      case "Retain":
+        return "bg-[#E6EFEA] text-[#0F3D2E] border-[#B8CEC5]";
+      case "Revise":
+        return "bg-[#FAF8F5] text-[#1C2420] border-[#E3DDD1]";
+      case "Reject":
+        return "bg-[#FBECEF] text-[#9E1B32] border-[#F3B8C2]";
       default:
-        return"bg-sand-100 text-sand-800 border-sand-300";
+        return "bg-[#FAF8F5] text-[#1C2420] border-[#E3DDD1]";
     }
   };
 

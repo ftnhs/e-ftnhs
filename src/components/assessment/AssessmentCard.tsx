@@ -26,19 +26,14 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
 }) => {
   const getMasteryColor = (level: string) => {
     switch (level) {
-      case"Mastered":
-        return"bg-emerald-100 text-emerald-800 border-emerald-300";
-      case"Closely Approximating Mastery":
-        return"bg-teal-100 text-teal-800 border-teal-300";
-      case"Moving Towards Mastery":
-        return"bg-cyprus-100 text-cyprus-800 border-cyprus-300";
-      case"Average Mastery":
-        return"bg-amber-100 text-amber-800 border-amber-300";
-      case"Low Mastery":
-      case"Very Low Mastery":
-        return"bg-orange-100 text-orange-800 border-orange-300";
+      case "Mastered":
+      case "Closely Approximating Mastery":
+        return "bg-[#E6EFEA] text-[#0F3D2E] border-[#B8CEC5]";
+      case "Moving Towards Mastery":
+      case "Average Mastery":
+        return "bg-[#FAF8F5] text-[#1C2420] border-[#E3DDD1]";
       default:
-        return"bg-crimson-100 text-crimson-800 border-crimson-300";
+        return "bg-[#FBECEF] text-[#9E1B32] border-[#F3B8C2]";
     }
   };
 

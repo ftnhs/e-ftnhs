@@ -11,12 +11,14 @@ import { MobileBottomNav } from "../navigation/MobileBottomNav";
 interface AppShellProps {
   activeModule: ModuleId;
   onSelectModule: (id: ModuleId) => void;
+  onGoHome?: () => void;
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
   activeModule,
   onSelectModule,
+  onGoHome,
   children,
 }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -54,6 +56,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       <TopNavbar
         onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
         onNavigateToProfile={() => onSelectModule("M1")}
+        onGoHome={onGoHome}
         activeTermLabel={activeTermLabel}
       />
 
@@ -81,6 +84,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         onClose={() => setMobileDrawerOpen(false)}
         activeModule={activeModule}
         onSelectModule={onSelectModule}
+        onGoHome={onGoHome}
       />
 
       {/* 4. Mobile Bottom Navigation Bar (44x44px touch targets) */}
