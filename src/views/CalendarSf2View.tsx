@@ -29,7 +29,7 @@ import {
   Filter,
 } from"lucide-react";
 
-export const ModuleJView: React.FC = () => {
+export const CalendarSf2View: React.FC = () => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"calendar" |"daily_sessions" |"sf2_monthly">("calendar");
 

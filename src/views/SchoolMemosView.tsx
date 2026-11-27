@@ -14,7 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-export const ModuleEView: React.FC = () => {
+export const SchoolMemosView: React.FC = () => {
   const { profile, isAdmin, isSchoolHead } = useAuth();
   const isPrivileged = isAdmin || isSchoolHead;
 

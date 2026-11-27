@@ -6,6 +6,7 @@
  */
 
 import type { CurriculumType, Subject, Section } from "../types";
+import { isSshsGrade } from "../utils/shsCurriculum";
 
 /**
  * Adjusted Transmutation Table (SY 2026-2027 Transition)
@@ -246,7 +247,8 @@ export function getSF9PerformanceDescriptor(
 export function inferCurriculumAndUnits(
   gradeLevel: number,
   subject: Pick<Subject, "subject_code" | "subject_name" | "category" | "track_strand">,
-  section?: Pick<Section, "section_name" | "track_strand"> | null
+  section?: Pick<Section, "section_name" | "track_strand"> | null,
+  schoolYear?: string | null
 ): { curriculumType: CurriculumType; units: number } {
   const code = subject.subject_code.toUpperCase();
   const name = subject.subject_name.toLowerCase();
@@ -259,9 +261,9 @@ export function inferCurriculumAndUnits(
     return { curriculumType: "MATATAG JHS", units: 1 };
   }
 
-  if (gradeLevel === 11) {
+  if (isSshsGrade(gradeLevel, schoolYear)) {
     if (/immersion/.test(name)) {
-      return { curriculumType: "SSHS Work Immersion", units: /techpro|tvl|ict/.test(trackText) ? 4 : 3 };
+      return { curriculumType: "SSHS Work Immersion", units: /technical-professional|techpro|tvl|ict/.test(trackText) ? 4 : 3 };
     }
     if (/research|design and innovation/.test(name)) {
       return { curriculumType: "SSHS Research Design", units: 3 };
@@ -272,10 +274,10 @@ export function inferCurriculumAndUnits(
     if (/sports|first aid|basic life support|human movement|physical education/.test(name)) {
       return { curriculumType: "SSHS Arts Sports Health", units: 3 };
     }
-    if (subject.category === "TVL" || /techpro|prognet|ict/.test(`${code.toLowerCase()} ${trackText}`)) {
+    if (subject.category === "TVL" || /technical-professional|techpro|prognet|ict/.test(`${code.toLowerCase()} ${trackText}`)) {
       return { curriculumType: "SSHS TechPro Elective", units: 4 };
     }
-    if (subject.category === "Specialized") {
+    if (subject.category === "Specialized" || subject.category === "Elective") {
       return { curriculumType: "SSHS Academic Elective", units: 3 };
     }
     return { curriculumType: "SSHS Core", units: 2 };

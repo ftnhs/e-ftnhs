@@ -17,6 +17,18 @@ import type {
 } from"../../../types";
 import { resolveTimeSlotsForSection } from "../../../services/timetableService";
 import {
+  SSHS_TRACK_OPTIONS,
+  defaultCategoryForGrade,
+  defaultCurriculumVersionForGrade,
+  isOldShsGrade12ForSchoolYear,
+  isSshsGrade,
+} from "../../../utils/shsCurriculum";
+import { SelectTermSubjectsModal } from "./SelectTermSubjectsModal";
+import {
+  PopulateTermSubjectsModal,
+  type PopulateTermSubjectsMode,
+} from "./PopulateTermSubjectsModal";
+import {
   School,
   Calendar,
   Users,
@@ -33,6 +45,8 @@ import {
   AlertCircle,
   X,
   RotateCcw,
+  Layers,
+  CheckSquare,
 } from"lucide-react";
 
 interface SchoolSettingsDashboardProps {
@@ -94,6 +108,12 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>("ALL");
   const [selectedTermFilter, setSelectedTermFilter] = useState<string>("");
+  const [selectedSubjectTermId, setSelectedSubjectTermId] = useState<string>("");
+  const [selectedSubjectLevel, setSelectedSubjectLevel] = useState<"ALL" | "JHS" | "SHS">("ALL");
+  const [termSubjectIds, setTermSubjectIds] = useState<string[]>([]);
+  const [termSubjectsTableMissing, setTermSubjectsTableMissing] = useState<boolean>(false);
+  const [isSelectTermSubjectsOpen, setIsSelectTermSubjectsOpen] = useState<boolean>(false);
+  const [isPopulateTermSubjectsOpen, setIsPopulateTermSubjectsOpen] = useState<boolean>(false);
 
   // Modal states for CRUD operations
   const [isTermModalOpen, setIsTermModalOpen] = useState(false);
@@ -159,6 +179,14 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
         const active = termsData.find((t) => t.is_active) || termsData[0];
         return active?.id ||"ALL";
       });
+
+      setSelectedSubjectTermId((prev) => {
+        if (prev && (prev === "MASTER" || termsData.some((t) => t.id === prev))) {
+          return prev;
+        }
+        const active = termsData.find((t) => t.is_active) || termsData[0];
+        return active?.id || "MASTER";
+      });
     } catch (err) {
       console.error("Error loading school reference data:", err);
       showToast("Error loading reference settings.","error");
@@ -177,6 +205,26 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
     const termId = selectedTermFilter === "ALL" ? undefined : selectedTermFilter;
     schoolReferenceService.fetchSections(termId).then(setSections).catch(console.error);
   }, [selectedTermFilter]);
+
+  const refreshSelectedTermSubjects = useCallback(async (termId: string) => {
+    if (!termId || termId === "MASTER") {
+      setTermSubjectIds([]);
+      setTermSubjectsTableMissing(false);
+      return;
+    }
+    try {
+      const res = await schoolReferenceService.fetchTermSubjectIds(termId);
+      setTermSubjectIds(res.subjectIds);
+      setTermSubjectsTableMissing(res.tableMissing);
+    } catch (err) {
+      console.error("Failed to fetch term subjects:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedSubjectTermId) return;
+    refreshSelectedTermSubjects(selectedSubjectTermId);
+  }, [selectedSubjectTermId, refreshSelectedTermSubjects]);
 
   // Active Term helper
   const activeTerm = useMemo(() => terms.find((t) => t.is_active), [terms]);
@@ -478,14 +526,107 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
       } else {
         const created = await schoolReferenceService.createSubject(subjectData);
         setSubjects((prev) => [...prev, created]);
-        showToast("New subject added to catalog.");
+        if (
+          selectedSubjectTermId &&
+          selectedSubjectTermId !== "MASTER" &&
+          !termSubjectsTableMissing
+        ) {
+          await schoolReferenceService.addTermSubject(selectedSubjectTermId, created.id);
+          setTermSubjectIds((prev) =>
+            prev.includes(created.id) ? prev : [...prev, created.id]
+          );
+          showToast("New subject added to catalog and selected term.");
+        } else {
+          showToast("New subject added to catalog.");
+        }
       }
       setIsSubjectModalOpen(false);
       setEditingSubject(null);
       loadAllReferenceData();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to save subject:", err);
-      showToast("Failed to save subject. Code must be unique.","error");
+      const rawMsg =
+        err && typeof err === "object" && "message" in err && typeof err.message === "string"
+          ? err.message
+          : "";
+      if (rawMsg.includes("subjects_catalog_category_check")) {
+        showToast(
+          "Run migration 033_add_elective_subject_category.sql in Supabase to allow the Elective category.",
+          "error"
+        );
+      } else {
+        showToast(rawMsg || "Failed to save subject. Code must be unique.", "error");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveSubjectFromTerm = async (subject: Subject) => {
+    if (!selectedSubjectTermId || selectedSubjectTermId === "MASTER") return;
+    if (
+      !window.confirm(
+        `Remove ${subject.subject_code} (${subject.subject_name}) from the selected term? It remains available in the Master Catalog.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await schoolReferenceService.removeTermSubject(selectedSubjectTermId, subject.id);
+      setTermSubjectIds((prev) => prev.filter((id) => id !== subject.id));
+      showToast(`${subject.subject_code} removed from this term.`);
+    } catch (err) {
+      console.error("Failed to remove subject from term:", err);
+      showToast("Failed to remove subject from this term.", "error");
+    }
+  };
+
+  const handleSaveTermSubjects = async (subjectIds: string[]) => {
+    if (!selectedSubjectTermId || selectedSubjectTermId === "MASTER") return;
+    setIsSaving(true);
+    try {
+      await schoolReferenceService.setTermSubjects(selectedSubjectTermId, subjectIds);
+      setTermSubjectIds(subjectIds);
+      setIsSelectTermSubjectsOpen(false);
+      showToast(`Updated term subjects (${subjectIds.length} selected).`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save term subjects.";
+      showToast(msg, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePopulateTermSubjects = async (params: {
+    mode: PopulateTermSubjectsMode;
+    sourceTermId?: string;
+    includeJhs: boolean;
+    includeShs: boolean;
+    clearExisting: boolean;
+  }) => {
+    if (!selectedSubjectTermId || selectedSubjectTermId === "MASTER") return;
+    setIsSaving(true);
+    try {
+      const res = await schoolReferenceService.populateTermSubjects({
+        targetTermId: selectedSubjectTermId,
+        ...params,
+      });
+      await refreshSelectedTermSubjects(selectedSubjectTermId);
+      setIsPopulateTermSubjectsOpen(false);
+      const levelsLabel =
+        params.includeJhs && params.includeShs
+          ? "JHS & SHS"
+          : params.includeJhs
+            ? "JHS"
+            : "SHS";
+      showToast(
+        `Populated ${res.insertedCount} ${levelsLabel} subject(s)${
+          res.skippedCount > 0 ? ` (${res.skippedCount} already present)` : ""
+        }.`
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to populate term subjects.";
+      showToast(msg, "error");
     } finally {
       setIsSaving(false);
     }
@@ -723,8 +864,40 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
     });
   }, [sections, selectedTermFilter, selectedGradeFilter, searchQuery]);
 
+  const isViewingMasterSubjectCatalog =
+    !selectedSubjectTermId || selectedSubjectTermId === "MASTER" || termSubjectsTableMissing;
+
+  const selectedSubjectTermObj = useMemo(() => {
+    if (!selectedSubjectTermId || selectedSubjectTermId === "MASTER") return null;
+    return terms.find((t) => t.id === selectedSubjectTermId) || null;
+  }, [terms, selectedSubjectTermId]);
+
+  const termActiveSubjects = useMemo(() => {
+    if (isViewingMasterSubjectCatalog) {
+      return subjects;
+    }
+    const idSet = new Set(termSubjectIds);
+    return subjects.filter((sub) => idSet.has(sub.id));
+  }, [subjects, isViewingMasterSubjectCatalog, termSubjectIds]);
+
+  const subjectLevelCounts = useMemo(() => {
+    let jhs = 0;
+    let shs = 0;
+    for (const sub of termActiveSubjects) {
+      if (sub.grade_level <= 10) jhs += 1;
+      else shs += 1;
+    }
+    return { all: termActiveSubjects.length, jhs, shs };
+  }, [termActiveSubjects]);
+
   const filteredSubjects = useMemo(() => {
-    return subjects.filter((sub) => {
+    return termActiveSubjects.filter((sub) => {
+      if (selectedSubjectLevel === "JHS" && sub.grade_level > 10) {
+        return false;
+      }
+      if (selectedSubjectLevel === "SHS" && sub.grade_level < 11) {
+        return false;
+      }
       if (selectedGradeFilter !=="ALL" && sub.grade_level.toString() !== selectedGradeFilter) {
         return false;
       }
@@ -733,12 +906,13 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
         return (
           sub.subject_code.toLowerCase().includes(q) ||
           sub.subject_name.toLowerCase().includes(q) ||
-          (sub.track_strand && sub.track_strand.toLowerCase().includes(q))
+          (sub.track_strand && sub.track_strand.toLowerCase().includes(q)) ||
+          (sub.curriculum_version && sub.curriculum_version.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [subjects, selectedGradeFilter, searchQuery]);
+  }, [termActiveSubjects, selectedSubjectLevel, selectedGradeFilter, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -851,7 +1025,7 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
           }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
-          <span>Subjects ({subjects.length})</span>
+          <span>Subjects ({termActiveSubjects.length})</span>
         </button>
 
         <button
@@ -1519,35 +1693,177 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
           )}
 
           {/* =========================================================================
-              SUB-TAB 5: SUBJECTS CATALOG
+              SUB-TAB 5: BY-TERM CURRICULUM SUBJECTS (JHS & SHS)
           ========================================================================== */}
           {activeTab ==="subjects" && (
-            <div className="bg-white rounded-2xl border border-sand-200 shadow-xs p-6 space-y-6 transition-colors">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-sand-200 pb-4">
+            <div className="bg-white rounded-2xl border border-sand-200 shadow-xs p-6 space-y-5 transition-colors">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-sand-200 pb-4">
                 <div>
                   <h2 className="text-base font-bold text-cyprus-900 font-display">
-                    Curriculum Subjects Catalog
+                    {selectedSubjectTermObj && !termSubjectsTableMissing
+                      ? `Term Curriculum Subjects — SY ${selectedSubjectTermObj.school_year} • Term ${selectedSubjectTermObj.term_number}`
+                      : "Master Curriculum Subjects Catalog"}
                   </h2>
                   <p className="text-xs text-sand-600 mt-0.5">
-                    Configure curriculum subjects across JHS Matatag and SHS tracks, contact minutes weekly, and laboratory requirements.
+                    Select which JHS (Grades 7–10) and SHS (Grades 11–12) subjects are offered per academic term, or populate from another term or the master catalog.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingSubject(null);
-                    setIsSubjectModalOpen(true);
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-crimson-600 hover:bg-crimson-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add New Subject</span>
-                </button>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {selectedSubjectTermObj && !termSubjectsTableMissing && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsPopulateTermSubjectsOpen(true)}
+                        className="px-3.5 py-2 rounded-xl bg-[#0F3D2E] hover:bg-[#0A2E22] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Layers className="w-4 h-4" />
+                        <span>Populate Term Subjects</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSelectTermSubjectsOpen(true)}
+                        className="px-3.5 py-2 rounded-xl bg-[#E6EFEA] border border-[#0F3D2E]/30 hover:bg-[#0F3D2E] hover:text-white text-[#0F3D2E] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                        <span>Select Subjects ({termActiveSubjects.length})</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSubject(null);
+                      setIsSubjectModalOpen(true);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#9E1B32] hover:bg-[#7F1528] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add New Subject</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                <div className="relative w-full sm:w-72">
+              {termSubjectsTableMissing && (
+                <div
+                  role="alert"
+                  className="p-3.5 rounded-xl bg-[#FBECEF] border border-[#F3B8C2] text-xs text-[#7F1528] leading-relaxed"
+                >
+                  <strong className="font-bold">Migration Required for By-Term Subjects:</strong>{" "}
+                  Run <span className="font-mono font-semibold">supabase/migrations/032_term_subjects.sql</span> in your Supabase SQL Editor to store per-term JHS &amp; SHS subject selections. Showing the Master Catalog ({subjects.length} subjects) in the meantime.
+                </div>
+              )}
+
+              {/* JHS & SHS Level Filter Pills + Term & Grade Selectors */}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#F4F1EA] border border-[#E3DDD1]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubjectLevel("ALL");
+                        setSelectedGradeFilter("ALL");
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                        selectedSubjectLevel === "ALL"
+                          ? "bg-[#0F3D2E] text-white"
+                          : "text-[#5C6660] hover:text-[#1C2420]"
+                      }`}
+                    >
+                      All JHS &amp; SHS ({subjectLevelCounts.all})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubjectLevel("JHS");
+                        if (selectedGradeFilter !== "ALL" && Number(selectedGradeFilter) > 10) {
+                          setSelectedGradeFilter("ALL");
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                        selectedSubjectLevel === "JHS"
+                          ? "bg-[#0F3D2E] text-white"
+                          : "text-[#5C6660] hover:text-[#1C2420]"
+                      }`}
+                    >
+                      JHS Grades 7–10 ({subjectLevelCounts.jhs})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubjectLevel("SHS");
+                        if (selectedGradeFilter !== "ALL" && Number(selectedGradeFilter) < 11) {
+                          setSelectedGradeFilter("ALL");
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                        selectedSubjectLevel === "SHS"
+                          ? "bg-[#0F3D2E] text-white"
+                          : "text-[#5C6660] hover:text-[#1C2420]"
+                      }`}
+                    >
+                      SHS Grades 11–12 ({subjectLevelCounts.shs})
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-sand-600 font-semibold whitespace-nowrap">
+                        Term:
+                      </span>
+                      <select
+                        value={selectedSubjectTermId}
+                        onChange={(e) => setSelectedSubjectTermId(e.target.value)}
+                        aria-label="Filter subjects by academic term"
+                        className="py-1.5 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
+                      >
+                        {terms.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            SY {t.school_year} • Term {t.term_number}
+                            {t.is_active ? " (Active)" : ""}
+                          </option>
+                        ))}
+                        <option value="MASTER">Master Catalog (All {subjects.length})</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-sand-600 font-semibold whitespace-nowrap">
+                        Grade:
+                      </span>
+                      <select
+                        value={selectedGradeFilter}
+                        onChange={(e) => setSelectedGradeFilter(e.target.value)}
+                        aria-label="Filter subjects by grade level"
+                        className="py-1.5 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
+                      >
+                        <option value="ALL">
+                          {selectedSubjectLevel === "JHS"
+                            ? "All JHS (7-10)"
+                            : selectedSubjectLevel === "SHS"
+                              ? "All SHS (11-12)"
+                              : "All Grades (7-12)"}
+                        </option>
+                        {selectedSubjectLevel !== "SHS" && (
+                          <>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                          </>
+                        )}
+                        {selectedSubjectLevel !== "JHS" && (
+                          <>
+                            <option value="11">Grade 11 (SHS)</option>
+                            <option value="12">Grade 12 (SHS)</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative w-full sm:w-80">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-sand-500" />
                   <input
                     type="text"
@@ -1557,24 +1873,6 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
                     className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-sand-300 bg-white text-xs font-medium text-cyprus-900"
                   />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="text-xs text-sand-600 font-semibold whitespace-nowrap">
-                    Grade Level:
-                  </span>
-                  <select
-                    value={selectedGradeFilter}
-                    onChange={(e) => setSelectedGradeFilter(e.target.value)}
-                    className="py-1.5 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
-                  >
-                    <option value="ALL">All Grades (7-12)</option>
-                    <option value="7">Grade 7</option>
-                    <option value="8">Grade 8</option>
-                    <option value="9">Grade 9</option>
-                    <option value="10">Grade 10</option>
-                    <option value="11">Grade 11 (SHS)</option>
-                    <option value="12">Grade 12 (SHS)</option>
-                  </select>
-                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1583,7 +1881,7 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
                     <tr className="border-b border-sand-200 text-[11px] font-bold text-sand-600 uppercase tracking-wider">
                       <th className="py-3 px-4">Code</th>
                       <th className="py-3 px-4">Subject Title</th>
-                      <th className="py-3 px-4">Grade</th>
+                      <th className="py-3 px-4">Level &amp; Grade</th>
                       <th className="py-3 px-4">Category / Track</th>
                       <th className="py-3 px-4">Minutes / Wk</th>
                       <th className="py-3 px-4">Lab Required</th>
@@ -1599,8 +1897,16 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
                         <td className="py-3 px-4 font-bold text-cyprus-800">
                           {sub.subject_name}
                         </td>
-                        <td className="py-3 px-4 font-semibold text-cyprus-900">
-                          Grade {sub.grade_level}
+                        <td className="py-3 px-4 font-semibold text-cyprus-900 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                              sub.grade_level >= 11
+                                ? "bg-[#FBECEF] text-[#9E1B32]"
+                                : "bg-[#E6EFEA] text-[#0F3D2E]"
+                            }`}
+                          >
+                            {sub.grade_level >= 11 ? "SHS" : "JHS"} • Grade {sub.grade_level}
+                          </span>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex flex-wrap items-center gap-1.5">
@@ -1633,32 +1939,78 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
                           )}
                         </td>
                         <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2"><button
-                            type="button"
-                            onClick={() => {
-                              setEditingSubject(sub);
-                              setIsSubjectModalOpen(true);
-                            }}
-                            className="p-1.5 rounded-lg text-sand-600 hover:text-cyprus-800 hover:bg-sand-100 transition-colors"
-                            aria-label={`Edit ${sub.subject_name}`}
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSubject(sub.id)}
-                            className="p-1.5 rounded-lg text-crimson-600 hover:text-crimson-700 hover:bg-crimson-50 transition-colors"
-                            aria-label={`Delete ${sub.subject_name}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button></div>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingSubject(sub);
+                                setIsSubjectModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-lg text-sand-600 hover:text-cyprus-800 hover:bg-sand-100 transition-colors cursor-pointer"
+                              aria-label={`Edit ${sub.subject_name}`}
+                              title="Edit subject details"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            {!isViewingMasterSubjectCatalog ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSubjectFromTerm(sub)}
+                                className="p-1.5 rounded-lg text-[#9E1B32] hover:bg-[#FBECEF] transition-colors cursor-pointer"
+                                aria-label={`Remove ${sub.subject_name} from term`}
+                                title="Remove from this term"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSubject(sub.id)}
+                                className="p-1.5 rounded-lg text-crimson-600 hover:text-crimson-700 hover:bg-crimson-50 transition-colors cursor-pointer"
+                                aria-label={`Delete ${sub.subject_name}`}
+                                title="Delete from master catalog"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
                     {filteredSubjects.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-xs text-sand-500">
-                          No subjects found matching your filter criteria.
+                        <td colSpan={7} className="py-10 text-center text-xs text-sand-500">
+                          {termActiveSubjects.length === 0 && !isViewingMasterSubjectCatalog ? (
+                            <div className="space-y-3">
+                              <p className="font-medium text-[#1C2420]">
+                                No JHS or SHS subjects selected for{" "}
+                                {selectedSubjectTermObj
+                                  ? `SY ${selectedSubjectTermObj.school_year} • Term ${selectedSubjectTermObj.term_number}`
+                                  : "this term"}{" "}
+                                yet.
+                              </p>
+                              <div className="flex flex-wrap items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPopulateTermSubjectsOpen(true)}
+                                  className="px-3.5 py-2 rounded-xl bg-[#0F3D2E] hover:bg-[#0A2E22] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Layers className="w-3.5 h-3.5" />
+                                  <span>Populate Term Subjects (JHS &amp; SHS)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsSelectTermSubjectsOpen(true)}
+                                  className="px-3.5 py-2 rounded-xl bg-[#E6EFEA] border border-[#0F3D2E]/30 text-[#0F3D2E] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <CheckSquare className="w-3.5 h-3.5" />
+                                  <span>Select Subjects Manually</span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            "No subjects found matching your filter criteria."
+                          )}
                         </td>
                       </tr>
                     )}
@@ -2063,12 +2415,49 @@ export const SchoolSettingsDashboard: React.FC<SchoolSettingsDashboardProps> = (
         <SubjectFormModal
           isOpen={isSubjectModalOpen}
           initialData={editingSubject}
+          schoolYear={
+            selectedSubjectTermObj?.school_year || activeTerm?.school_year || "2026-2027"
+          }
+          defaultGradeLevel={
+            selectedGradeFilter !== "ALL"
+              ? Number(selectedGradeFilter)
+              : selectedSubjectLevel === "SHS"
+                ? 11
+                : 7
+          }
           onClose={() => {
             setIsSubjectModalOpen(false);
             setEditingSubject(null);
           }}
           onSave={handleSaveSubject}
           isSaving={isSaving}
+        />
+      )}
+
+      {/* 4B. Select Term Subjects Modal (JHS & SHS) */}
+      {isSelectTermSubjectsOpen && selectedSubjectTermObj && (
+        <SelectTermSubjectsModal
+          isOpen={isSelectTermSubjectsOpen}
+          termLabel={`SY ${selectedSubjectTermObj.school_year} • Term ${selectedSubjectTermObj.term_number}`}
+          allSubjects={subjects}
+          initialSelectedIds={termSubjectIds}
+          isSaving={isSaving}
+          onClose={() => setIsSelectTermSubjectsOpen(false)}
+          onSave={handleSaveTermSubjects}
+        />
+      )}
+
+      {/* 4C. Populate Term Subjects Modal (JHS & SHS) */}
+      {isPopulateTermSubjectsOpen && selectedSubjectTermObj && (
+        <PopulateTermSubjectsModal
+          isOpen={isPopulateTermSubjectsOpen}
+          targetTerm={selectedSubjectTermObj}
+          otherTerms={terms.filter((t) => t.id !== selectedSubjectTermObj.id)}
+          allSubjects={subjects}
+          currentTermCount={termSubjectIds.length}
+          isPopulating={isSaving}
+          onClose={() => setIsPopulateTermSubjectsOpen(false)}
+          onPopulate={handlePopulateTermSubjects}
         />
       )}
 
@@ -2300,8 +2689,16 @@ const SectionFormModal: React.FC<SectionFormModalProps> = ({
   const [gradeLevel, setGradeLevel] = useState<number>(initialData?.grade_level || 7);
   const [sectionName, setSectionName] = useState(initialData?.section_name ||"");
   const [trackStrand, setTrackStrand] = useState(initialData?.track_strand || "");
+  const [isCustomTrack, setIsCustomTrack] = useState<boolean>(() => {
+    const val = initialData?.track_strand?.trim() || "";
+    return Boolean(val) && !SSHS_TRACK_OPTIONS.includes(val as (typeof SSHS_TRACK_OPTIONS)[number]);
+  });
   const [adviserId, setAdviserId] = useState<string>(initialData?.adviser_id ||"");
   const [roomId, setRoomId] = useState<string>(initialData?.room_id ||"");
+
+  const selectedTerm = terms.find((t) => t.id === termId) || activeTerm;
+  const sectionIsSshs = isSshsGrade(gradeLevel, selectedTerm?.school_year);
+  const grade12IsOldShs = isOldShsGrade12ForSchoolYear(12, selectedTerm?.school_year);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2366,8 +2763,8 @@ const SectionFormModal: React.FC<SectionFormModalProps> = ({
                 <option value={8}>Grade 8</option>
                 <option value={9}>Grade 9</option>
                 <option value={10}>Grade 10</option>
-                <option value={11}>Grade 11 (SHS)</option>
-                <option value={12}>Grade 12 (SHS)</option>
+                <option value={11}>Grade 11 (SSHS)</option>
+                <option value={12}>Grade 12 ({grade12IsOldShs ? "Old SHS" : "SSHS"})</option>
               </select>
             </div>
 
@@ -2388,17 +2785,50 @@ const SectionFormModal: React.FC<SectionFormModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="modal-sec-track" className="block text-xs font-semibold text-cyprus-900 mb-1">
-              Track / Strand (Optional — for SHS &amp; SF9)
-            </label>
-            <input
-              id="modal-sec-track"
-              type="text"
-              value={trackStrand}
-              onChange={(e) => setTrackStrand(e.target.value)}
-              placeholder="e.g. JHS MATATAG, SSHS Academic - ASSH, SSHS TechPro - ICT, Old SHS TVL - ICT"
-              className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-medium text-cyprus-900"
-            />
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <label htmlFor="modal-sec-track" className="block text-xs font-semibold text-cyprus-900">
+                Track / Strand {sectionIsSshs ? "(SSHS)" : "(Optional — for SHS & SF9)"}
+              </label>
+              {sectionIsSshs && (
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTrack((prev) => !prev)}
+                  className="text-[11px] font-semibold text-[#0F3D2E] hover:text-[#9E1B32] cursor-pointer"
+                >
+                  {isCustomTrack ? "Use standard tracks" : "Custom label"}
+                </button>
+              )}
+            </div>
+            {sectionIsSshs && !isCustomTrack ? (
+              <select
+                id="modal-sec-track"
+                value={trackStrand}
+                onChange={(e) => setTrackStrand(e.target.value)}
+                className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
+              >
+                <option value="">-- Select SSHS Track --</option>
+                {SSHS_TRACK_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="modal-sec-track"
+                type="text"
+                value={trackStrand}
+                onChange={(e) => setTrackStrand(e.target.value)}
+                placeholder={
+                  sectionIsSshs
+                    ? "Academic or Technical-Professional (TechPro)"
+                    : gradeLevel === 12
+                      ? "e.g. Old SHS HUMSS, Old SHS TVL - ICT"
+                      : "e.g. JHS MATATAG (Optional)"
+                }
+                className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-medium text-cyprus-900"
+              />
+            )}
           </div>
 
           <div>
@@ -2624,6 +3054,8 @@ const DepartmentFormModal: React.FC<DepartmentFormModalProps> = ({
 interface SubjectFormModalProps {
   isOpen: boolean;
   initialData: Subject | null;
+  schoolYear?: string | null;
+  defaultGradeLevel?: number;
   onClose: () => void;
   onSave: (data: {
     subject_code: string;
@@ -2640,23 +3072,33 @@ interface SubjectFormModalProps {
 
 const SubjectFormModal: React.FC<SubjectFormModalProps> = ({
   initialData,
+  schoolYear = "2026-2027",
+  defaultGradeLevel = 7,
   onClose,
   onSave,
   isSaving,
 }) => {
-  const defaultCurriculumForGrade = (grade: number): SubjectCurriculumVersion =>
-    grade === 11 ? "SSHS" : grade === 12 ? "Old SHS" : "JHS MATATAG";
+  const startingGrade = initialData?.grade_level || defaultGradeLevel;
+  const grade12IsOldShs = isOldShsGrade12ForSchoolYear(12, schoolYear);
 
   const [subjectCode, setSubjectCode] = useState(initialData?.subject_code ||"");
   const [subjectName, setSubjectName] = useState(initialData?.subject_name ||"");
-  const [gradeLevel, setGradeLevel] = useState<number>(initialData?.grade_level || 7);
+  const [gradeLevel, setGradeLevel] = useState<number>(startingGrade);
   const [trackStrand, setTrackStrand] = useState(initialData?.track_strand ||"");
-  const [category, setCategory] = useState<SubjectCategory>(initialData?.category ||"Core");
+  const [category, setCategory] = useState<SubjectCategory>(
+    initialData?.category || defaultCategoryForGrade(startingGrade, schoolYear)
+  );
   const [curriculumVersion, setCurriculumVersion] = useState<SubjectCurriculumVersion>(
-    initialData?.curriculum_version || defaultCurriculumForGrade(initialData?.grade_level || 7)
+    initialData?.curriculum_version || defaultCurriculumVersionForGrade(startingGrade, schoolYear)
   );
   const [minutesPerWeek, setMinutesPerWeek] = useState<number>(initialData?.minutes_per_week || 240);
   const [requiresLab, setRequiresLab] = useState<boolean>(initialData?.requires_lab || false);
+  const [isCustomTrack, setIsCustomTrack] = useState<boolean>(() => {
+    const val = initialData?.track_strand?.trim() || "";
+    return Boolean(val) && !SSHS_TRACK_OPTIONS.includes(val as (typeof SSHS_TRACK_OPTIONS)[number]);
+  });
+
+  const isSshsSubject = curriculumVersion === "SSHS" || isSshsGrade(gradeLevel, schoolYear);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2732,7 +3174,8 @@ const SubjectFormModal: React.FC<SubjectFormModalProps> = ({
                   const nextGrade = Number(e.target.value);
                   setGradeLevel(nextGrade);
                   if (!initialData) {
-                    setCurriculumVersion(defaultCurriculumForGrade(nextGrade));
+                    setCurriculumVersion(defaultCurriculumVersionForGrade(nextGrade, schoolYear));
+                    setCategory(defaultCategoryForGrade(nextGrade, schoolYear));
                   }
                 }}
                 className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
@@ -2742,7 +3185,7 @@ const SubjectFormModal: React.FC<SubjectFormModalProps> = ({
                 <option value={9}>Grade 9</option>
                 <option value={10}>Grade 10</option>
                 <option value={11}>Grade 11 (SSHS)</option>
-                <option value={12}>Grade 12 (Old SHS)</option>
+                <option value={12}>Grade 12 ({grade12IsOldShs ? "Old SHS" : "SSHS"})</option>
               </select>
             </div>
 
@@ -2757,6 +3200,7 @@ const SubjectFormModal: React.FC<SubjectFormModalProps> = ({
                 className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
               >
                 <option value="Core">Core</option>
+                <option value="Elective">Elective</option>
                 <option value="Applied">Applied</option>
                 <option value="Specialized">Specialized</option>
                 <option value="TVL">TVL</option>
@@ -2775,24 +3219,61 @@ const SubjectFormModal: React.FC<SubjectFormModalProps> = ({
               className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
             >
               <option value="JHS MATATAG">JHS MATATAG (Grades 7–10)</option>
-              <option value="SSHS">Strengthened SHS — Grade 11</option>
-              <option value="Old SHS">Old K-12 SHS Curriculum — Grade 12</option>
+              <option value="SSHS">
+                {grade12IsOldShs
+                  ? "Strengthened SHS — Grade 11 (and Grade 12 next SY)"
+                  : "Strengthened SHS (SSHS) — Grades 11 & 12"}
+              </option>
+              <option value="Old SHS">Old K-12 SHS Curriculum — Grade 12 (SY 2026–2027)</option>
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="modal-sub-track" className="block text-xs font-semibold text-cyprus-900 mb-1">
-                Track / Strand (Optional)
-              </label>
-              <input
-                id="modal-sub-track"
-                type="text"
-                value={trackStrand}
-                onChange={(e) => setTrackStrand(e.target.value)}
-                placeholder="STEM, TVL-ICT, HUMSS"
-                className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-medium text-cyprus-900"
-              />
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <label htmlFor="modal-sub-track" className="block text-xs font-semibold text-cyprus-900">
+                  Track / Strand {isSshsSubject ? "" : "(Optional)"}
+                </label>
+                {isSshsSubject && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomTrack((prev) => !prev)}
+                    className="text-[11px] font-semibold text-[#0F3D2E] hover:text-[#9E1B32] cursor-pointer"
+                  >
+                    {isCustomTrack ? "Standard" : "Custom"}
+                  </button>
+                )}
+              </div>
+              {isSshsSubject && !isCustomTrack ? (
+                <select
+                  id="modal-sub-track"
+                  value={trackStrand}
+                  onChange={(e) => setTrackStrand(e.target.value)}
+                  className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-semibold text-cyprus-900"
+                >
+                  <option value="">-- Select Track --</option>
+                  {SSHS_TRACK_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  id="modal-sub-track"
+                  type="text"
+                  value={trackStrand}
+                  onChange={(e) => setTrackStrand(e.target.value)}
+                  placeholder={
+                    isSshsSubject
+                      ? "Academic or Technical-Professional (TechPro)"
+                      : gradeLevel === 12
+                        ? "HUMSS, STEM, TVL-ICT"
+                        : "Optional (JHS MATATAG)"
+                  }
+                  className="w-full py-2 px-3 rounded-lg border border-sand-300 bg-white text-xs font-medium text-cyprus-900"
+                />
+              )}
             </div>
 
             <div>

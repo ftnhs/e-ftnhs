@@ -13,6 +13,7 @@ import {
   fetchSchoolTermsAndFaculty,
   type AssignedClassSubjectItem,
 } from "../services/classManagementService";
+import { schoolReferenceService } from "../services/schoolReferenceService";
 import type {
   ClassRecord,
   StudentGrade,
@@ -61,7 +62,7 @@ function formatCurriculumLabel(type: CurriculumType): string {
   return map[type] ?? type;
 }
 
-export const ModuleGView: React.FC = () => {
+export const ClassesEcrSf9View: React.FC = () => {
   const { profile, isAdmin, isSchoolHead } = useAuth();
   const isPrivileged = isAdmin || isSchoolHead;
 
@@ -109,17 +110,34 @@ export const ModuleGView: React.FC = () => {
       }
 
       const effectiveTermNum = (termData?.term_number as 1 | 2 | 3) || 1;
-      const [subjectsRes, sectionsRes, recordsList, metaRes, myLoads] = await Promise.all([
-        supabase.from("subjects_catalog").select("*").order("subject_name"),
-        sectionsQuery,
-        fetchClassRecords(termData?.id, isPrivileged ? undefined : profile?.id),
-        fetchSchoolTermsAndFaculty(),
-        profile?.id && termData?.id
-          ? fetchTeacherAssignedClassSubjects(profile.id, termData.id, effectiveTermNum)
-          : Promise.resolve([]),
-      ]);
+      const [subjectsRes, termSubjectMeta, sectionsRes, recordsList, metaRes, myLoads] =
+        await Promise.all([
+          supabase.from("subjects_catalog").select("*").order("subject_name"),
+          termData?.id
+            ? schoolReferenceService.fetchTermSubjectIds(termData.id)
+            : Promise.resolve({ subjectIds: [], tableMissing: true }),
+          sectionsQuery,
+          fetchClassRecords(termData?.id, isPrivileged ? undefined : profile?.id),
+          fetchSchoolTermsAndFaculty(),
+          profile?.id && termData?.id
+            ? fetchTeacherAssignedClassSubjects(
+                profile.id,
+                termData.id,
+                effectiveTermNum,
+                termData.school_year
+              )
+            : Promise.resolve([]),
+        ]);
 
-      if (subjectsRes.data) setSubjects(subjectsRes.data);
+      if (subjectsRes.data) {
+        const allSubs = subjectsRes.data as Subject[];
+        const termSubSet = new Set(termSubjectMeta.subjectIds);
+        setSubjects(
+          !termSubjectMeta.tableMissing && termSubSet.size > 0
+            ? allSubs.filter((s) => termSubSet.has(s.id))
+            : allSubs
+        );
+      }
       if (sectionsRes.data) setSections(sectionsRes.data);
       setFacultyList(metaRes.faculty);
       setAssignedLoads(myLoads);

@@ -31,7 +31,7 @@ import {
   Layers,
 } from"lucide-react";
 
-export const ModuleDView: React.FC = () => {
+export const ItemAnalysisView: React.FC = () => {
   const { profile, isAdmin, isSchoolHead } = useAuth();
   const isPrivileged = isAdmin || isSchoolHead;
 

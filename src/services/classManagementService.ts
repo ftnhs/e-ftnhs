@@ -471,7 +471,20 @@ export async function deleteSectionSubject(id: string): Promise<void> {
  * Pulls any teacher_subject_loads assigned to a section into section_subjects
  * so Class Management and Faculty Loading stay completely aligned.
  */
-export async function syncSectionSubjectsFromLoads(section: Section): Promise<number> {
+export async function syncSectionSubjectsFromLoads(
+  section: Section,
+  schoolYear?: string | null
+): Promise<number> {
+  let effectiveSchoolYear = schoolYear;
+  if (!effectiveSchoolYear && section.term_id) {
+    const { data: termRow } = await supabase
+      .from("academic_terms")
+      .select("school_year")
+      .eq("id", section.term_id)
+      .single();
+    effectiveSchoolYear = termRow?.school_year || null;
+  }
+
   const { data: loads, error } = await supabase
     .from("teacher_subject_loads")
     .select("*, subject:subjects_catalog(*)")
@@ -483,7 +496,12 @@ export async function syncSectionSubjectsFromLoads(section: Section): Promise<nu
   const rows = loads
     .filter((l: { subject?: Subject }) => Boolean(l.subject))
     .map((l: { term_id: string; section_id: string; subject_id: string; teacher_id: string; subject: Subject }, idx: number) => {
-      const inferred = inferCurriculumAndUnits(section.grade_level, l.subject, section);
+      const inferred = inferCurriculumAndUnits(
+        section.grade_level,
+        l.subject,
+        section,
+        effectiveSchoolYear
+      );
       return {
         term_id: l.term_id,
         section_id: l.section_id,
@@ -513,7 +531,8 @@ export async function syncSectionSubjectsFromLoads(section: Section): Promise<nu
 export async function fetchTeacherAssignedClassSubjects(
   teacherId: string,
   termId: string,
-  termNumber: 1 | 2 | 3
+  termNumber: 1 | 2 | 3,
+  schoolYear?: string | null
 ): Promise<AssignedClassSubjectItem[]> {
   const [secSubRes, loadsRes, recordsRes] = await Promise.all([
     supabase
@@ -574,7 +593,12 @@ export async function fetchTeacherAssignedClassSubjects(
     if (!row.section || !row.subject) continue;
     const key = `${row.section.id}_${row.subject.id}`;
     if (combined.has(key)) continue;
-    const inferred = inferCurriculumAndUnits(row.section.grade_level, row.subject, row.section);
+    const inferred = inferCurriculumAndUnits(
+      row.section.grade_level,
+      row.subject,
+      row.section,
+      schoolYear
+    );
     combined.set(key, {
       section: row.section,
       subject: row.subject,

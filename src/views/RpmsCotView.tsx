@@ -22,7 +22,7 @@ import {
   Layers,
 } from"lucide-react";
 
-export const ModuleHView: React.FC = () => {
+export const RpmsCotView: React.FC = () => {
   const { profile, isAdmin, isSchoolHead } = useAuth();
   const isPrivileged = isAdmin || isSchoolHead;
 

@@ -1,52 +1,121 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppShell } from "./components/layout/AppShell";
 import { AppSkeletonLoader } from "./components/common/AppSkeletonLoader";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginView } from "./views/LoginView";
-import type { ModuleId } from "./types";
+import {
+  resolvePathname,
+  getRoutePathForModule,
+  getModuleTitleForRole,
+} from "./components/navigation/navigationData";
+import type { ModuleId, UserRole } from "./types";
 
-// Route-level code-splitting for all 10 modules (ADR-09 Core Web Vitals)
-const ModuleAView = lazy(() =>
-  import("./views/ModuleAView").then((m) => ({ default: m.ModuleAView }))
+// Route-level code-splitting for all 10 portal pages (ADR-09 Core Web Vitals)
+const AdminSettingsView = lazy(() =>
+  import("./views/AdminSettingsView").then((m) => ({ default: m.AdminSettingsView }))
 );
-const ModuleBView = lazy(() =>
-  import("./views/ModuleBView").then((m) => ({ default: m.ModuleBView }))
+const ScheduleView = lazy(() =>
+  import("./views/ScheduleView").then((m) => ({ default: m.ScheduleView }))
 );
-const ModuleCView = lazy(() =>
-  import("./views/ModuleCView").then((m) => ({ default: m.ModuleCView }))
+const LessonPlansView = lazy(() =>
+  import("./views/LessonPlansView").then((m) => ({ default: m.LessonPlansView }))
 );
-const ModuleDView = lazy(() =>
-  import("./views/ModuleDView").then((m) => ({ default: m.ModuleDView }))
+const ItemAnalysisView = lazy(() =>
+  import("./views/ItemAnalysisView").then((m) => ({ default: m.ItemAnalysisView }))
 );
-const ModuleEView = lazy(() =>
-  import("./views/ModuleEView").then((m) => ({ default: m.ModuleEView }))
+const SchoolMemosView = lazy(() =>
+  import("./views/SchoolMemosView").then((m) => ({ default: m.SchoolMemosView }))
 );
-const ModuleFView = lazy(() =>
-  import("./views/ModuleFView").then((m) => ({ default: m.ModuleFView }))
+const OrganizationsView = lazy(() =>
+  import("./views/OrganizationsView").then((m) => ({ default: m.OrganizationsView }))
 );
-const ModuleGView = lazy(() =>
-  import("./views/ModuleGView").then((m) => ({ default: m.ModuleGView }))
+const ClassesEcrSf9View = lazy(() =>
+  import("./views/ClassesEcrSf9View").then((m) => ({ default: m.ClassesEcrSf9View }))
 );
-const ModuleHView = lazy(() =>
-  import("./views/ModuleHView").then((m) => ({ default: m.ModuleHView }))
+const RpmsCotView = lazy(() =>
+  import("./views/RpmsCotView").then((m) => ({ default: m.RpmsCotView }))
 );
-const ModuleIView = lazy(() =>
-  import("./views/ModuleIView").then((m) => ({ default: m.ModuleIView }))
+const LeaveReliefView = lazy(() =>
+  import("./views/LeaveReliefView").then((m) => ({ default: m.LeaveReliefView }))
 );
-const ModuleJView = lazy(() =>
-  import("./views/ModuleJView").then((m) => ({ default: m.ModuleJView }))
+const CalendarSf2View = lazy(() =>
+  import("./views/CalendarSf2View").then((m) => ({ default: m.CalendarSf2View }))
 );
+const SchoolPortalsView = lazy(() =>
+  import("./views/SchoolPortalsView").then((m) => ({ default: m.SchoolPortalsView }))
+);
+
+function getDefaultModuleForRole(role?: UserRole): ModuleId {
+  if (role === "Teacher") return "M2";
+  if (role === "Non-Teaching") return "M5";
+  return "M1";
+}
 
 const AppContent: React.FC = () => {
   const { user, profile, isLoading, logout } = useAuth();
-  // Always open on the public Landing / Home Page first (even if a session is cached)
-  const [pageView, setPageView] = useState<"landing" | "login" | "portal">("landing");
-  const [activeModule, setActiveModule] = useState<ModuleId>("M1");
+
+  const initialRoute = resolvePathname(window.location.pathname);
+  const [pageView, setPageView] = useState<"landing" | "login" | "portal">(initialRoute.pageView);
+  const [activeModule, setActiveModule] = useState<ModuleId>(
+    initialRoute.pageView === "portal" ? initialRoute.moduleId : "M1"
+  );
+  const hasExplicitInitialPortalRoute = useRef<boolean>(initialRoute.pageView === "portal");
   const lastRoutedProfileId = useRef<string | null>(null);
 
-  // Route to role-appropriate default home module once profile loads for a signed-in user
+  const navigateTo = useCallback(
+    (
+      nextView: "landing" | "login" | "portal",
+      nextModule?: ModuleId,
+      options?: { replace?: boolean }
+    ) => {
+      const resolvedModule = nextModule || activeModule;
+      const targetUrl =
+        nextView === "landing"
+          ? "/"
+          : nextView === "login"
+            ? "/login"
+            : getRoutePathForModule(resolvedModule, profile?.role);
+
+      setPageView(nextView);
+      if (nextView === "portal" && nextModule) {
+        setActiveModule(nextModule);
+      }
+
+      if (window.location.pathname !== targetUrl) {
+        if (options?.replace) {
+          window.history.replaceState(null, "", targetUrl);
+        } else {
+          window.history.pushState(null, "", targetUrl);
+        }
+      }
+    },
+    [activeModule, profile?.role]
+  );
+
+  const handleSelectModule = useCallback(
+    (moduleId: ModuleId) => {
+      navigateTo("portal", moduleId);
+    },
+    [navigateTo]
+  );
+
+  // Support browser Back / Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = resolvePathname(window.location.pathname);
+      setPageView(parsed.pageView);
+      if (parsed.pageView === "portal") {
+        setActiveModule(parsed.moduleId);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Route to role-appropriate default home module once profile loads,
+  // unless the user refreshed directly on an explicit module URL (e.g. /schedule)
   useEffect(() => {
     if (!profile) {
       lastRoutedProfileId.current = null;
@@ -55,27 +124,48 @@ const AppContent: React.FC = () => {
     if (lastRoutedProfileId.current === profile.id) return;
     lastRoutedProfileId.current = profile.id;
 
-    if (profile.role === "Teacher") setActiveModule("M2");
-    else if (profile.role === "Non-Teaching") setActiveModule("M5");
-    else setActiveModule("M1");
-  }, [profile]);
+    if (hasExplicitInitialPortalRoute.current) {
+      hasExplicitInitialPortalRoute.current = false;
+      return;
+    }
 
-  // Automatically enter the Faculty Portal upon signing in from LoginView,
-  // and return cleanly to LandingPage upon signing out from the Portal.
+    const defaultModule = getDefaultModuleForRole(profile.role);
+    setActiveModule(defaultModule);
+    if (pageView === "portal") {
+      const targetUrl = getRoutePathForModule(defaultModule, profile.role);
+      if (window.location.pathname !== targetUrl) {
+        window.history.replaceState(null, "", targetUrl);
+      }
+    }
+  }, [profile, pageView]);
+
+  // Enter the Faculty Portal upon signing in from /login,
+  // and return cleanly to / upon signing out from the Portal.
   useEffect(() => {
     if (pageView === "login" && user) {
-      setPageView("portal");
+      const targetModule = profile
+        ? getDefaultModuleForRole(profile.role)
+        : activeModule;
+      navigateTo("portal", targetModule, { replace: true });
     } else if (pageView === "portal" && !isLoading && !user) {
-      setPageView("landing");
+      navigateTo("landing", undefined, { replace: true });
     }
-  }, [pageView, user, isLoading]);
+  }, [pageView, user, profile, isLoading, activeModule, navigateTo]);
 
-  const moduleNamesMap: Record<string, string> = {
-    M2: "Lesson Log (DLL/DLP) Hub",
-    M3: "Faculty Loading & Schedule (SF7)",
-    M4: "Online Exam & Item Analysis",
-    M7: "Classes, ECR & SF9",
-    M8: "RPMS Portfolio & COT Observations",
+  // Keep browser tab title synchronized with the active page
+  useEffect(() => {
+    if (pageView === "landing") {
+      document.title = "e-FTNHS — Fermin Tayabas National High School";
+    } else if (pageView === "login") {
+      document.title = "Faculty Sign In — e-FTNHS";
+    } else {
+      document.title = `${getModuleTitleForRole(activeModule, profile?.role)} — e-FTNHS`;
+    }
+  }, [pageView, activeModule, profile?.role]);
+
+  const handleSignOut = async () => {
+    await logout();
+    navigateTo("landing", undefined, { replace: true });
   };
 
   if (pageView === "landing") {
@@ -83,39 +173,51 @@ const AppContent: React.FC = () => {
       <LandingPage
         isAuthenticated={Boolean(user)}
         userName={profile?.full_name || user?.email || null}
-        onEnterPortal={() => setPageView("portal")}
-        onSignIn={() => setPageView(user ? "portal" : "login")}
-        onSignOut={logout}
+        onEnterPortal={() => {
+          const targetModule = getDefaultModuleForRole(profile?.role);
+          navigateTo("portal", targetModule);
+        }}
+        onSignIn={() => {
+          if (user) {
+            navigateTo("portal", getDefaultModuleForRole(profile?.role));
+          } else {
+            navigateTo("login");
+          }
+        }}
+        onSignOut={handleSignOut}
       />
     );
   }
 
   if (pageView === "login" && !user) {
-    return <LoginView onBackToHome={() => setPageView("landing")} />;
+    return <LoginView onBackToHome={() => navigateTo("landing")} />;
   }
+
+  const currentModuleTitle = getModuleTitleForRole(activeModule, profile?.role);
 
   return (
     <ProtectedRoute
       activeModule={activeModule}
-      onSelectModule={setActiveModule}
-      moduleTitle={moduleNamesMap[activeModule] || "Instructional Module"}
+      onSelectModule={handleSelectModule}
+      moduleTitle={currentModuleTitle}
     >
       <AppShell
         activeModule={activeModule}
-        onSelectModule={setActiveModule}
-        onGoHome={() => setPageView("landing")}
+        onSelectModule={handleSelectModule}
+        onGoHome={() => navigateTo("landing")}
       >
         <Suspense fallback={<AppSkeletonLoader />}>
-          {activeModule === "M1" && <ModuleAView />}
-          {activeModule === "M2" && <ModuleCView />}
-          {activeModule === "M3" && <ModuleBView />}
-          {activeModule === "M4" && <ModuleDView />}
-          {activeModule === "M5" && <ModuleEView />}
-          {activeModule === "M6" && <ModuleFView />}
-          {activeModule === "M7" && <ModuleGView />}
-          {activeModule === "M8" && <ModuleHView />}
-          {activeModule === "M9" && <ModuleIView />}
-          {activeModule === "M10" && <ModuleJView />}
+          {activeModule === "M1" && <AdminSettingsView />}
+          {activeModule === "M2" && <LessonPlansView />}
+          {activeModule === "M3" && <ScheduleView />}
+          {activeModule === "M4" && <ItemAnalysisView />}
+          {activeModule === "M5" && <SchoolMemosView />}
+          {activeModule === "M6" && <OrganizationsView />}
+          {activeModule === "M7" && <ClassesEcrSf9View />}
+          {activeModule === "M8" && <RpmsCotView />}
+          {activeModule === "M9" && <LeaveReliefView />}
+          {activeModule === "M10" && <CalendarSf2View />}
+          {activeModule === "M11" && <SchoolPortalsView />}
         </Suspense>
       </AppShell>
     </ProtectedRoute>

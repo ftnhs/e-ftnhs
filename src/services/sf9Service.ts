@@ -7,6 +7,7 @@
 
 import { supabase } from "../lib/supabase";
 import { getSF9PerformanceDescriptor } from "./transmutationEngine";
+import { isSshsGrade } from "../utils/shsCurriculum";
 import type {
   Section,
   Learner,
@@ -94,11 +95,14 @@ function computeAge(birthdate?: string | null): number | null {
   return age >= 0 ? age : null;
 }
 
-export function detectSF9TemplateVariant(section: Section): SF9TemplateVariant {
+export function detectSF9TemplateVariant(
+  section: Section,
+  schoolYear?: string | null
+): SF9TemplateVariant {
   if (section.grade_level <= 10) return "JHS_MATATAG";
-  if (section.grade_level === 11) {
+  if (isSshsGrade(section.grade_level, schoolYear)) {
     const track = `${section.track_strand || ""} ${section.section_name || ""}`.toLowerCase();
-    if (/techpro|tvl|ict|afa|awh|ind-tech|auto|maritime|create|artisan|htm/.test(track)) {
+    if (/technical-professional|techpro|tvl|ict|afa|awh|ind-tech|auto|maritime|create|artisan|htm/.test(track)) {
       return "SSHS_TECHPRO";
     }
     return "SSHS_ACADEMIC";
@@ -241,7 +245,7 @@ export async function fetchConsolidatedSF9ForSection(
         subject_id: cr.subject_id,
         teacher_id: cr.teacher_id,
         curriculum_type: cr.curriculum_type,
-        units: section.grade_level === 11 ? 2 : 1,
+        units: isSshsGrade(section.grade_level, schoolYear) ? 2 : 1,
         sort_order: 99,
         subject: cr.subject,
       });
@@ -274,7 +278,7 @@ export async function fetchConsolidatedSF9ForSection(
     students?: Array<{ student_name: string; student_lrn: string; status: string }>;
   }>;
 
-  const variant = detectSF9TemplateVariant(section);
+  const variant = detectSF9TemplateVariant(section, schoolYear);
   const isOldShs = variant === "OLD_SHS";
 
   // Build SF9 report per learner

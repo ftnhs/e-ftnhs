@@ -20,7 +20,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-export const ModuleCView: React.FC = () => {
+export const LessonPlansView: React.FC = () => {
   const { profile, user, isAdmin, isSchoolHead } = useAuth();
   const isPrivileged = isAdmin || isSchoolHead;
   const currentUserId = profile?.id || user?.id;
@@ -45,7 +45,7 @@ export const ModuleCView: React.FC = () => {
       const data = await fetchAllLessonPlans(currentUserId, roleParam);
       setPlans(data);
     } catch (err) {
-      console.error("[ModuleCView] Error loading lesson plans:", err);
+      console.error("[LessonPlansView] Error loading lesson plans:", err);
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +90,7 @@ export const ModuleCView: React.FC = () => {
         setReviewPlan(null);
       }
     } catch (err) {
-      console.error("[ModuleCView] Error deleting lesson plan:", err);
+      console.error("[LessonPlansView] Error deleting lesson plan:", err);
       window.alert("Failed to delete lesson plan. Please try again.");
     }
   };
@@ -239,4 +239,4 @@ export const ModuleCView: React.FC = () => {
   );
 };
 
-export default ModuleCView;
+export default LessonPlansView;

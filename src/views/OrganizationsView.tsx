@@ -30,7 +30,7 @@ import {
   Globe,
 } from"lucide-react";
 
-export const ModuleFView: React.FC = () => {
+export const OrganizationsView: React.FC = () => {
   const { profile, isAdmin, isSchoolHead } = useAuth();
   const isPrivileged = isAdmin || isSchoolHead;
 

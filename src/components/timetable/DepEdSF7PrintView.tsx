@@ -11,6 +11,7 @@ import type {
 } from "../../types";
 import {
   resolveTimeSlotForSection,
+  resolveScheduleEntryTime,
   getVisibleSlotsForSection,
   computeLoadPlottedStats,
 } from "../../services/timetableService";
@@ -182,7 +183,7 @@ export const DepEdSF7PrintView: React.FC<DepEdSF7PrintViewProps> = ({
             >
               {teachers.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.full_name} ({t.designation || "Teacher"} • {t.department || "General"})
+                  {t.full_name}
                 </option>
               ))}
             </select>
@@ -335,14 +336,6 @@ export const DepEdSF7PrintView: React.FC<DepEdSF7PrintViewProps> = ({
                         const cell = mergedMatrix[slot.id]?.[day];
                         if (!cell || cell.skip) return null;
 
-                        const entrySlot = cell.entry
-                          ? resolveTimeSlotForSection(slot, timeSlotOverrides, cell.entry.section)
-                          : null;
-                        const entryDiffersFromRow =
-                          entrySlot !== null &&
-                          (entrySlot.start_time !== slot.start_time ||
-                            entrySlot.end_time !== slot.end_time);
-
                         return (
                           <td
                             key={day}
@@ -351,19 +344,54 @@ export const DepEdSF7PrintView: React.FC<DepEdSF7PrintViewProps> = ({
                               paperConfig.isCompact ? "py-1" : "py-1.5"
                             } px-1.5 text-center align-middle leading-tight`}
                           >
-                            {cell.entry ? (
-                              <div className="space-y-0.5">
-                                <div className="font-semibold text-[10px]">
-                                  {cell.entry.subject?.subject_name}
-                                </div>
-                                <div className="text-[9.5px] font-medium">
-                                  {cell.entry.section?.grade_level} - {cell.entry.section?.section_name}
-                                </div>
-                                {entryDiffersFromRow && entrySlot && (
-                                  <div className="text-[8.5px] font-medium text-slate-600 tabular-nums">
-                                    ({formatScheduleTimeRange(entrySlot.start_time, entrySlot.end_time)})
-                                  </div>
-                                )}
+                            {cell.entries.length > 0 ? (
+                              <div className="space-y-1">
+                                {cell.entries.map((entryItem, entryIdx) => {
+                                  const entrySlot = resolveTimeSlotForSection(
+                                    slot,
+                                    timeSlotOverrides,
+                                    entryItem.section
+                                  );
+                                  const entryTime = resolveScheduleEntryTime(
+                                    entryItem,
+                                    timeSlots,
+                                    timeSlotOverrides,
+                                    sections
+                                  );
+                                  const effectiveStart = entryTime.is_custom_time
+                                    ? entryTime.start_time
+                                    : entrySlot.start_time;
+                                  const effectiveEnd = entryTime.is_custom_time
+                                    ? entryTime.end_time
+                                    : entrySlot.end_time;
+                                  const entryDiffersFromRow =
+                                    cell.entries.length > 1 ||
+                                    effectiveStart.slice(0, 5) !== slot.start_time.slice(0, 5) ||
+                                    effectiveEnd.slice(0, 5) !== slot.end_time.slice(0, 5);
+
+                                  return (
+                                    <div
+                                      key={entryItem.id}
+                                      className={
+                                        entryIdx > 0
+                                          ? "pt-1 border-t border-slate-300 space-y-0.5"
+                                          : "space-y-0.5"
+                                      }
+                                    >
+                                      <div className="font-semibold text-[10px]">
+                                        {entryItem.subject?.subject_name}
+                                      </div>
+                                      <div className="text-[9.5px] font-medium">
+                                        {entryItem.section?.grade_level} - {entryItem.section?.section_name}
+                                      </div>
+                                      {entryDiffersFromRow && (
+                                        <div className="text-[8.5px] font-medium text-slate-600 tabular-nums">
+                                          ({formatScheduleTimeRange(effectiveStart, effectiveEnd)})
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             ) : null}
                           </td>

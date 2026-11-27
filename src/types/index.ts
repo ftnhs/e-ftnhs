@@ -53,6 +53,9 @@ export interface AcademicTerm {
   is_active: boolean;
   start_date: string | null;
   end_date: string | null;
+  is_schedule_locked?: boolean;
+  schedule_locked_at?: string | null;
+  schedule_locked_by?: string | null;
   created_at?: string;
 }
 
@@ -103,7 +106,8 @@ export type ModuleId =
   | "M7" // Automated E-Class Record (DO 8 s. 2015)
   | "M8" // RPMS Portfolio MOV Vault & COT Scheduler
   | "M9" // Leave Application & Class Relief Matrix
-  | "M10"; // School Calendar & SF2 Daily Attendance
+  | "M10" // School Calendar & SF2 Daily Attendance
+  | "M11"; // Connected FTNHS Portals (Online Exam & Smart Inventory)
 
 export type LessonPlanStatus = "Submitted" | "Under Review" | "Approved" | "Needs Revision";
 
@@ -195,7 +199,7 @@ export interface NavigationItem {
 
 export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
 
-export type SubjectCategory = "Core" | "Applied" | "Specialized" | "TVL";
+export type SubjectCategory = "Core" | "Elective" | "Applied" | "Specialized" | "TVL";
 
 export type SubjectCurriculumVersion = "JHS MATATAG" | "SSHS" | "Old SHS";
 
@@ -210,6 +214,14 @@ export interface Subject {
   minutes_per_week: number;
   requires_lab: boolean;
   created_at?: string;
+}
+
+export interface TermSubject {
+  id: string;
+  term_id: string;
+  subject_id: string;
+  created_at?: string;
+  subject?: Subject;
 }
 
 export interface Room {
@@ -278,7 +290,10 @@ export interface TeacherSubjectLoad {
   teacher_id: string;
   subject_id: string;
   section_id: string;
+  room_id?: string | null;
   teaching_minutes_weekly: number;
+  target_minutes_weekly?: number | null;
+  session_minutes?: number | null;
   ancillary_minutes_weekly: number;
   ancillary_description?: string | null;
   status: "Draft" | "Assigned" | "Locked";
@@ -294,6 +309,7 @@ export interface TeacherSubjectLoad {
   };
   subject?: Subject;
   section?: Section;
+  room?: Room;
 }
 
 export interface ScheduleEntry {
@@ -307,6 +323,9 @@ export interface ScheduleEntry {
   time_slot_id: string;
   room_id?: string | null;
   day_of_week: DayOfWeek;
+  custom_start_time?: string | null;
+  custom_end_time?: string | null;
+  custom_duration_minutes?: number | null;
   created_at?: string;
   teacher?: {
     id: string;

@@ -66,18 +66,18 @@ interface ClassManagementPanelProps {
 const CURRICULUM_OPTIONS: Array<{ value: CurriculumType; label: string }> = [
   { value: "MATATAG JHS", label: "JHS MATATAG Core (20/50/30)" },
   { value: "MATATAG JHS Skill-Based", label: "JHS MATATAG MAPEH/TLE (20/60/20)" },
-  { value: "SSHS Core", label: "Gr. 11 SSHS Core / Academic (20/50/30)" },
-  { value: "SSHS Academic Elective", label: "Gr. 11 SSHS Academic Elective (20/50/30)" },
-  { value: "SSHS Field Exposure", label: "Gr. 11 SSHS Field Exposure / Creative Prod (15/70/15)" },
-  { value: "SSHS Arts Sports Health", label: "Gr. 11 SSHS Arts, Sports & Health (20/60/20)" },
-  { value: "SSHS Research Design", label: "Gr. 11 SSHS Research & Design (40/60/0)" },
-  { value: "SSHS TechPro Elective", label: "Gr. 11 SSHS TechPro Elective (15/65/20)" },
-  { value: "SSHS Work Immersion", label: "Gr. 11 SSHS Work Immersion (20/80/0)" },
-  { value: "Old SHS Core", label: "Gr. 12 Old SHS Core (25/50/25)" },
-  { value: "Old SHS Applied", label: "Gr. 12 Old SHS Applied (25/45/30)" },
-  { value: "Old SHS Specialized", label: "Gr. 12 Old SHS Specialized (25/45/30)" },
-  { value: "Old SHS TVL", label: "Gr. 12 Old SHS TVL (20/60/20)" },
-  { value: "Old SHS Immersion", label: "Gr. 12 Old SHS Immersion / Research (35/40/25)" },
+  { value: "SSHS Core", label: "SSHS Core / Academic (20/50/30)" },
+  { value: "SSHS Academic Elective", label: "SSHS Academic Elective (20/50/30)" },
+  { value: "SSHS Field Exposure", label: "SSHS Field Exposure / Creative Prod (15/70/15)" },
+  { value: "SSHS Arts Sports Health", label: "SSHS Arts, Sports & Health (20/60/20)" },
+  { value: "SSHS Research Design", label: "SSHS Research & Design (40/60/0)" },
+  { value: "SSHS TechPro Elective", label: "SSHS TechPro Elective (15/65/20)" },
+  { value: "SSHS Work Immersion", label: "SSHS Work Immersion (20/80/0)" },
+  { value: "Old SHS Core", label: "Old SHS Core — SY 2026-2027 Gr. 12 (25/50/25)" },
+  { value: "Old SHS Applied", label: "Old SHS Applied — SY 2026-2027 Gr. 12 (25/45/30)" },
+  { value: "Old SHS Specialized", label: "Old SHS Specialized — SY 2026-2027 Gr. 12 (25/45/30)" },
+  { value: "Old SHS TVL", label: "Old SHS TVL — SY 2026-2027 Gr. 12 (20/60/20)" },
+  { value: "Old SHS Immersion", label: "Old SHS Immersion / Research — SY 2026-2027 Gr. 12 (35/40/25)" },
 ];
 
 function computeAgeDisplay(birthdate?: string | null): string {
@@ -218,12 +218,17 @@ export const ClassManagementPanel: React.FC<ClassManagementPanelProps> = ({
       ) || availableSubjectsForGrade[0];
       if (first) {
         setConnectSubjectId(first.id);
-        const inferred = inferCurriculumAndUnits(selectedClass.grade_level, first, selectedClass);
+        const inferred = inferCurriculumAndUnits(
+          selectedClass.grade_level,
+          first,
+          selectedClass,
+          activeTerm?.school_year
+        );
         setConnectCurriculum(inferred.curriculumType);
         setConnectUnits(inferred.units);
       }
     }
-  }, [availableSubjectsForGrade, selectedClass, sectionSubjects]);
+  }, [availableSubjectsForGrade, selectedClass, sectionSubjects, activeTerm?.school_year]);
 
   const handleSaveAdviserAndTrack = async () => {
     if (!selectedClass || !isPrivileged) return;
@@ -927,7 +932,12 @@ export const ClassManagementPanel: React.FC<ClassManagementPanelProps> = ({
                       setConnectSubjectId(nextId);
                       const sub = subjects.find((s) => s.id === nextId);
                       if (sub) {
-                        const inf = inferCurriculumAndUnits(selectedClass.grade_level, sub, selectedClass);
+                        const inf = inferCurriculumAndUnits(
+                          selectedClass.grade_level,
+                          sub,
+                          selectedClass,
+                          activeTerm?.school_year
+                        );
                         setConnectCurriculum(inf.curriculumType);
                         setConnectUnits(inf.units);
                       }

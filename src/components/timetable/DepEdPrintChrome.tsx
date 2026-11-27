@@ -15,6 +15,7 @@ export function formatScheduleTimeRange(startTime: string, endTime: string): str
 
 export interface MergedSlotCell {
   entry: ScheduleEntry | undefined;
+  entries: ScheduleEntry[];
   rowSpan: number;
   skip: boolean;
 }
@@ -76,11 +77,22 @@ export function buildMergedScheduleMatrix(
   for (const slot of timeSlots) {
     matrix[slot.id] = {} as Record<DayOfWeek, MergedSlotCell>;
     for (const day of days) {
-      const entry =
+      const slotEntries =
         slot.slot_type === "Academic"
-          ? entries.find((e) => e.time_slot_id === slot.id && e.day_of_week === day)
-          : undefined;
-      matrix[slot.id]![day] = { entry, rowSpan: 1, skip: false };
+          ? entries
+              .filter((e) => e.time_slot_id === slot.id && e.day_of_week === day)
+              .sort((a, b) =>
+                (a.custom_start_time || slot.start_time).localeCompare(
+                  b.custom_start_time || slot.start_time
+                )
+              )
+          : [];
+      matrix[slot.id]![day] = {
+        entry: slotEntries[0],
+        entries: slotEntries,
+        rowSpan: 1,
+        skip: false,
+      };
     }
   }
 
@@ -89,7 +101,12 @@ export function buildMergedScheduleMatrix(
     while (i < timeSlots.length) {
       const slot = timeSlots[i]!;
       const cell = matrix[slot.id]![day]!;
-      if (slot.slot_type !== "Academic" || !cell.entry) {
+      if (
+        slot.slot_type !== "Academic" ||
+        cell.entries.length !== 1 ||
+        !cell.entry ||
+        cell.entry.custom_start_time
+      ) {
         i += 1;
         continue;
       }
@@ -101,7 +118,9 @@ export function buildMergedScheduleMatrix(
         const nextCell = matrix[nextSlot.id]![day]!;
         if (
           nextSlot.slot_type === "Academic" &&
+          nextCell.entries.length === 1 &&
           nextCell.entry &&
+          !nextCell.entry.custom_start_time &&
           matchKey(nextCell.entry) === key
         ) {
           nextCell.skip = true;

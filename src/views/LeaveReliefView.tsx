@@ -30,7 +30,7 @@ import {
   ChevronRight,
 } from"lucide-react";
 
-export const ModuleIView: React.FC = () => {
+export const LeaveReliefView: React.FC = () => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"all" |"my_leaves" |"conforme_requests">("all");
   const [applications, setApplications] = useState<LeaveApplication[]>([]);

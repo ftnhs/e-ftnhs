@@ -361,6 +361,222 @@ export const schoolReferenceService = {
   },
 
   // ==========================================
+  // 4B. BY-TERM SUBJECT OFFERINGS (term_subjects)
+  // ==========================================
+  isMissingTermSubjectsTableError(error: unknown): boolean {
+    if (!error || typeof error !== "object") return false;
+    const e = error as { code?: string; message?: string };
+    const code = e.code || "";
+    const msg = (e.message || "").toLowerCase();
+    return (
+      code === "42P01" ||
+      code === "PGRST205" ||
+      msg.includes("term_subjects") && (msg.includes("does not exist") || msg.includes("schema cache"))
+    );
+  },
+
+  async fetchTermSubjectIds(
+    termId: string
+  ): Promise<{ subjectIds: string[]; tableMissing: boolean }> {
+    if (!termId) return { subjectIds: [], tableMissing: false };
+    const { data, error } = await supabase
+      .from("term_subjects")
+      .select("subject_id")
+      .eq("term_id", termId);
+
+    if (error) {
+      if (this.isMissingTermSubjectsTableError(error)) {
+        return { subjectIds: [], tableMissing: true };
+      }
+      console.error("Error fetching term_subjects:", error);
+      throw error;
+    }
+
+    return {
+      subjectIds: ((data || []) as Array<{ subject_id: string }>).map((r) => r.subject_id),
+      tableMissing: false,
+    };
+  },
+
+  async addTermSubject(termId: string, subjectId: string): Promise<void> {
+    if (!termId || !subjectId) return;
+    const { error } = await supabase
+      .from("term_subjects")
+      .upsert({ term_id: termId, subject_id: subjectId }, { onConflict: "term_id,subject_id" });
+
+    if (error && !this.isMissingTermSubjectsTableError(error)) {
+      console.error("Error adding subject to term:", error);
+      throw error;
+    }
+  },
+
+  async removeTermSubject(termId: string, subjectId: string): Promise<void> {
+    if (!termId || !subjectId) return;
+    const { error } = await supabase
+      .from("term_subjects")
+      .delete()
+      .eq("term_id", termId)
+      .eq("subject_id", subjectId);
+
+    if (error) {
+      console.error("Error removing subject from term:", error);
+      throw error;
+    }
+  },
+
+  async setTermSubjects(termId: string, subjectIds: string[]): Promise<void> {
+    if (!termId) return;
+    const { subjectIds: existingIds, tableMissing } = await this.fetchTermSubjectIds(termId);
+    if (tableMissing) {
+      throw new Error(
+        "The term_subjects table is missing in Supabase. Please run migration 032_term_subjects.sql first."
+      );
+    }
+
+    const desiredSet = new Set(subjectIds);
+    const existingSet = new Set(existingIds);
+
+    const toInsert = Array.from(desiredSet)
+      .filter((id) => !existingSet.has(id))
+      .map((subject_id) => ({ term_id: termId, subject_id }));
+
+    const toDelete = Array.from(existingSet).filter((id) => !desiredSet.has(id));
+
+    if (toDelete.length > 0) {
+      const { error: delErr } = await supabase
+        .from("term_subjects")
+        .delete()
+        .eq("term_id", termId)
+        .in("subject_id", toDelete);
+      if (delErr) throw delErr;
+    }
+
+    if (toInsert.length > 0) {
+      const { error: insErr } = await supabase
+        .from("term_subjects")
+        .upsert(toInsert, { onConflict: "term_id,subject_id" });
+      if (insErr) throw insErr;
+    }
+  },
+
+  async populateTermSubjects(params: {
+    targetTermId: string;
+    mode: "from-term" | "from-catalog" | "from-loads";
+    sourceTermId?: string;
+    includeJhs: boolean;
+    includeShs: boolean;
+    clearExisting?: boolean;
+  }): Promise<{ insertedCount: number; skippedCount: number; clearedCount: number }> {
+    const { targetTermId, mode, sourceTermId, includeJhs, includeShs, clearExisting = false } = params;
+    if (!targetTermId) throw new Error("Target term is required.");
+    if (!includeJhs && !includeShs) {
+      throw new Error("Please select at least JHS or SHS subjects to populate.");
+    }
+
+    const allCatalog = await this.fetchSubjects();
+    const levelAllowedIds = new Set(
+      allCatalog
+        .filter((s) => (s.grade_level <= 10 ? includeJhs : includeShs))
+        .map((s) => s.id)
+    );
+
+    let candidateIds: string[] = [];
+
+    if (mode === "from-catalog") {
+      candidateIds = Array.from(levelAllowedIds);
+    } else if (mode === "from-term") {
+      if (!sourceTermId) throw new Error("Please select a source academic term.");
+      if (sourceTermId === targetTermId) {
+        throw new Error("Source and target academic terms must be different.");
+      }
+
+      const { subjectIds: srcTermSubjectIds, tableMissing } =
+        await this.fetchTermSubjectIds(sourceTermId);
+      if (tableMissing) {
+        throw new Error(
+          "The term_subjects table is missing in Supabase. Please run migration 032_term_subjects.sql first."
+        );
+      }
+
+      if (srcTermSubjectIds.length > 0) {
+        candidateIds = srcTermSubjectIds.filter((id) => levelAllowedIds.has(id));
+      } else {
+        // Fallback: infer from source term's loads & schedule entries if term_subjects wasn't populated yet
+        const [loadsRes, schedRes] = await Promise.all([
+          supabase.from("teacher_subject_loads").select("subject_id").eq("term_id", sourceTermId),
+          supabase.from("schedule_entries").select("subject_id").eq("term_id", sourceTermId),
+        ]);
+        const inferred = new Set<string>();
+        ((loadsRes.data || []) as Array<{ subject_id: string }>).forEach((r) =>
+          inferred.add(r.subject_id)
+        );
+        ((schedRes.data || []) as Array<{ subject_id: string }>).forEach((r) =>
+          inferred.add(r.subject_id)
+        );
+        candidateIds = Array.from(inferred).filter((id) => levelAllowedIds.has(id));
+      }
+    } else {
+      // mode === "from-loads": infer from target term's existing loads, schedule entries, & section_subjects
+      const [loadsRes, schedRes, secSubRes] = await Promise.all([
+        supabase.from("teacher_subject_loads").select("subject_id").eq("term_id", targetTermId),
+        supabase.from("schedule_entries").select("subject_id").eq("term_id", targetTermId),
+        supabase.from("section_subjects").select("subject_id").eq("term_id", targetTermId),
+      ]);
+      const inferred = new Set<string>();
+      ((loadsRes.data || []) as Array<{ subject_id: string }>).forEach((r) =>
+        inferred.add(r.subject_id)
+      );
+      ((schedRes.data || []) as Array<{ subject_id: string }>).forEach((r) =>
+        inferred.add(r.subject_id)
+      );
+      ((secSubRes.data || []) as Array<{ subject_id: string }>).forEach((r) =>
+        inferred.add(r.subject_id)
+      );
+      candidateIds = Array.from(inferred).filter((id) => levelAllowedIds.has(id));
+    }
+
+    const { subjectIds: existingTargetIds, tableMissing } =
+      await this.fetchTermSubjectIds(targetTermId);
+    if (tableMissing) {
+      throw new Error(
+        "The term_subjects table is missing in Supabase. Please run migration 032_term_subjects.sql first."
+      );
+    }
+
+    let clearedCount = 0;
+    const existingSet = new Set(existingTargetIds);
+
+    if (clearExisting && existingSet.size > 0) {
+      const { error: delErr } = await supabase
+        .from("term_subjects")
+        .delete()
+        .eq("term_id", targetTermId);
+      if (delErr) throw delErr;
+      clearedCount = existingSet.size;
+      existingSet.clear();
+    }
+
+    const uniqueCandidates = Array.from(new Set(candidateIds));
+    const toInsert = uniqueCandidates
+      .filter((id) => !existingSet.has(id))
+      .map((subject_id) => ({ term_id: targetTermId, subject_id }));
+    const skippedCount = uniqueCandidates.length - toInsert.length;
+
+    if (toInsert.length > 0) {
+      const { error: insErr } = await supabase
+        .from("term_subjects")
+        .upsert(toInsert, { onConflict: "term_id,subject_id" });
+      if (insErr) throw insErr;
+    }
+
+    return {
+      insertedCount: toInsert.length,
+      skippedCount,
+      clearedCount,
+    };
+  },
+
+  // ==========================================
   // 5. BELL SCHEDULE & TIME SLOTS
   // ==========================================
   async fetchTimeSlots(): Promise<TimeSlot[]> {

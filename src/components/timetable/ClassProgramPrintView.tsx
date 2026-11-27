@@ -7,7 +7,7 @@ import type {
   AcademicTerm,
   SchoolSettings,
 } from "../../types";
-import { getVisibleSlotsForSection } from "../../services/timetableService";
+import { getVisibleSlotsForSection, resolveScheduleEntryTime } from "../../services/timetableService";
 import { ScheduleSignatories } from "./ScheduleSignatories";
 import {
   PrintPageSizeStyle,
@@ -272,16 +272,40 @@ export const ClassProgramPrintView: React.FC<ClassProgramPrintViewProps> = ({
                             paperConfig.isCompact ? "py-1" : "py-1.5"
                           } px-1 text-center align-middle leading-tight`}
                         >
-                          {cell.entry ? (
-                            <div className="space-y-0.5">
-                              <div className="font-semibold uppercase text-[9.5px]">
-                                {cell.entry.subject?.subject_name}
-                              </div>
-                              <div className="text-[9.5px] text-slate-800">
-                                {cell.entry.teacher?.full_name ||
-                                  cell.entry.guest_instructor_name ||
-                                  ""}
-                              </div>
+                          {cell.entries.length > 0 ? (
+                            <div className="space-y-1">
+                              {cell.entries.map((entryItem, entryIdx) => {
+                                const entryTime = resolveScheduleEntryTime(
+                                  entryItem,
+                                  timeSlots,
+                                  timeSlotOverrides,
+                                  sections
+                                );
+                                return (
+                                  <div
+                                    key={entryItem.id}
+                                    className={
+                                      entryIdx > 0
+                                        ? "pt-1 border-t border-slate-300 space-y-0.5"
+                                        : "space-y-0.5"
+                                    }
+                                  >
+                                    <div className="font-semibold uppercase text-[9.5px]">
+                                      {entryItem.subject?.subject_name}
+                                    </div>
+                                    <div className="text-[9.5px] text-slate-800">
+                                      {entryItem.teacher?.full_name ||
+                                        entryItem.guest_instructor_name ||
+                                        ""}
+                                    </div>
+                                    {(entryTime.is_custom_time || cell.entries.length > 1) && (
+                                      <div className="text-[8.5px] text-slate-600 tabular-nums">
+                                        ({formatScheduleTimeRange(entryTime.start_time, entryTime.end_time)})
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : null}
                         </td>

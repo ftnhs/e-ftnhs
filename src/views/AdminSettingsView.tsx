@@ -25,7 +25,7 @@ import {
   User,
 } from "lucide-react";
 
-export const ModuleAView: React.FC = () => {
+export const AdminSettingsView: React.FC = () => {
   const { profile: currentAdmin, isAdmin, isSchoolHead } = useAuth();
   const [activeTab, setActiveTab] = useState<"profile" | "approvals" | "faculty" | "settings">(
     "profile"
